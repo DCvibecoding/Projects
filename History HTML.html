@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Terra Chronica — what was happening everywhere, all at once</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Spline+Sans+Mono:wght@400;500&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C2A2E; --paper:#EDE6D6; --glow:#D98F3A; --clay:#B5766A;
+    --tag-politics:#C9A227; --tag-war:#B5493A; --tag-economy:#4E7A6B;
+    --tag-science:#5B6C9E; --tag-society:#8A6D9E; --tag-infrastructure:#7A7A6E;
+    --tag-expansion:#C9A227; --tag-culture:#B5766A; --tag-religion:#7E9AA6;
+    --tag-revolution:#C25E2A; --tag-leader:#6E8B3D; --tag-disaster:#8C5A4A; --tag-sport:#3E8E8E;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'Spline Sans',system-ui,sans-serif;}
+  .page{max-width:1240px; margin:0 auto; padding:36px 24px 60px;}
+  .kicker{font-family:'Spline Sans Mono',monospace; font-size:12px; letter-spacing:.35em; color:var(--glow); margin-bottom:14px;}
+  h1{font-family:'Fraunces',serif; font-weight:600; font-size:clamp(26px,4vw,42px); line-height:1.05; margin:0 0 12px; letter-spacing:-.01em;}
+  .sub{font-size:16px; line-height:1.5; max-width:640px; opacity:.7; margin:0 0 24px;}
+  .stat{font-family:'Spline Sans Mono',monospace; font-size:11px; opacity:.5; margin-bottom:20px; letter-spacing:.03em;}
+
+  .searchbar{position:relative; max-width:520px; margin-bottom:18px;}
+  .searchbar input{width:100%; font-family:'Spline Sans',sans-serif; font-size:15px; padding:11px 40px 11px 14px; border:1.5px solid var(--ink); border-radius:2px; background:#F4EEE0; color:var(--ink); outline:none;}
+  .searchbar .mag{position:absolute; right:13px; top:50%; transform:translateY(-50%); opacity:.4; font-size:15px;}
+  .results{position:absolute; z-index:20; left:0; right:0; top:calc(100% + 4px); background:#F4EEE0; border:1.5px solid var(--ink); border-radius:2px; box-shadow:0 8px 24px #1c2a2e22; max-height:340px; overflow:auto; display:none;}
+  .results.on{display:block;}
+  .result{padding:10px 14px; cursor:pointer; border-bottom:1px solid #1C2A2E14;}
+  .result:last-child{border-bottom:none;}
+  .result:hover, .result.sel{background:#D98F3A22;}
+  .result .r-title{font-weight:600; font-size:14px;}
+  .result .r-meta{font-family:'Spline Sans Mono',monospace; font-size:11px; opacity:.6; margin-top:2px;}
+  .result .r-type{display:inline-block; font-family:'Spline Sans Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; padding:1px 6px; border-radius:2px; border:1px solid #1C2A2E33; margin-right:6px; opacity:.7;}
+  .no-result{padding:12px 14px; font-size:13px; opacity:.6; font-style:italic;}
+
+  .controls{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:14px;}
+  .year-box{display:flex; border:1.5px solid var(--ink); border-radius:2px; overflow:hidden;}
+  .year-box input{font-family:'Spline Sans Mono',monospace; font-size:18px; width:96px; padding:8px 12px; border:none; background:transparent; color:var(--ink); outline:none;}
+  .year-box button{font-family:'Spline Sans Mono',monospace; font-size:13px; letter-spacing:.1em; padding:0 16px; background:var(--ink); color:var(--paper); border:none; cursor:pointer;}
+  .random{font-family:'Spline Sans Mono',monospace; font-size:13px; letter-spacing:.08em; padding:9px 16px; background:transparent; color:var(--ink); border:1.5px solid var(--ink); border-radius:2px; cursor:pointer;}
+  .toggle{display:flex; align-items:center; gap:8px; font-size:13px; opacity:.75; cursor:pointer;}
+  input[type=range]{width:100%; margin:4px 0 0; accent-color:var(--glow);}
+  .scale-note{font-family:'Spline Sans Mono',monospace; font-size:10px; opacity:.45; display:flex; justify-content:space-between; margin-top:3px;}
+
+  .layout{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:26px; align-items:start;}
+  .col-map{position:sticky; top:20px;}
+  @media (max-width:860px){ .layout{grid-template-columns:1fr;} .col-map{position:static;} }
+
+  .current-year{font-family:'Fraunces',serif; font-size:36px; font-weight:600; text-align:center; margin:0 0 2px; letter-spacing:-.01em;}
+  .window-note{text-align:center; font-family:'Spline Sans Mono',monospace; font-size:11px; letter-spacing:.05em; opacity:.5; margin-bottom:10px;}
+  .globe-wrap{position:relative; width:100%; background:radial-gradient(circle at 50% 40%, #24363d 0%, #1a272c 70%); border-radius:8px; border:1.5px solid #1C2A2E22; overflow:hidden; padding:8px 0;}
+  #globe{width:100%; cursor:grab;}
+  #globe:active{cursor:grabbing;}
+  .globe-status{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#c9d6da; font-family:'Spline Sans Mono',monospace; font-size:13px; letter-spacing:.05em; pointer-events:none; text-align:center; padding:0 20px;}
+  .globe-hud{position:absolute; bottom:10px; left:0; right:0; display:flex; justify-content:center; gap:14px; font-family:'Spline Sans Mono',monospace; font-size:10px; letter-spacing:.08em; color:#9fb3b9; pointer-events:none;}
+  .anachro-note{position:absolute; top:10px; left:12px; font-family:'Spline Sans Mono',monospace; font-size:9px; letter-spacing:.04em; color:#9fb3b9; opacity:.7; max-width:180px; line-height:1.35; pointer-events:none;}
+  .paused-badge{position:absolute; top:10px; right:12px; font-family:'Spline Sans Mono',monospace; font-size:10px; letter-spacing:.1em; color:var(--glow); border:1px solid #D98F3A66; border-radius:2px; padding:3px 8px; opacity:0; transition:opacity .3s; background:#1a272ccc;}
+  .paused-badge.on{opacity:1;}
+  .globe-controls{display:flex; justify-content:center; gap:8px; margin:10px 0 12px;}
+  .globe-controls button{font-family:'Spline Sans Mono',monospace; font-size:14px; width:34px; height:30px; background:transparent; border:1.5px solid var(--ink); border-radius:2px; cursor:pointer; color:var(--ink);}
+  .globe-controls .label{align-self:center; font-family:'Spline Sans Mono',monospace; font-size:10px; letter-spacing:.1em; opacity:.5; margin:0 6px;}
+  .legend{display:flex; flex-wrap:wrap; gap:14px 18px; justify-content:center; font-size:12px; opacity:.85; padding:2px 4px;}
+  .legend .item{display:flex; align-items:center; gap:7px;}
+  .legend .swatch{width:12px; height:12px; border-radius:50%; display:inline-block;}
+  .legend .swatch.active{background:var(--glow); box-shadow:0 0 0 3px #D98F3A33;}
+  .legend .swatch.quiet{background:#b9b0a0;}
+  .legend .swatch.indig{background:transparent; border:2px solid var(--clay); border-radius:2px; transform:rotate(45deg); width:10px; height:10px;}
+
+  .panel{border:1.5px solid var(--ink); border-radius:4px; background:#F4EEE0; overflow:hidden;}
+  .panel-head{display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1.5px solid #1C2A2E22; background:var(--ink); color:var(--paper);}
+  .panel-head h2{font-family:'Fraunces',serif; font-size:20px; font-weight:600; margin:0;}
+  .close{background:transparent; border:1px solid #EDE6D666; color:var(--paper); font-size:12px; padding:5px 10px; border-radius:2px; cursor:pointer; font-family:'Spline Sans Mono',monospace;}
+  .era-head{padding:16px 22px 4px;}
+  .era-head .era-kicker{font-family:'Spline Sans Mono',monospace; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--glow); margin-bottom:6px;}
+  .era-head h3{font-family:'Fraunces',serif; font-size:22px; font-weight:600; margin:0 0 4px;}
+  .era-head .era-desc{font-size:15px; line-height:1.6; opacity:.85;}
+  .narrative{padding:12px 22px 6px; font-size:16px; line-height:1.62;}
+  .narrative .meanwhile{margin-top:14px; padding-top:14px; border-top:1px solid #1C2A2E18; font-size:14.5px; opacity:.82;}
+  .narrative .meanwhile b{font-family:'Spline Sans Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--glow); display:block; margin-bottom:5px; opacity:.9;}
+  .sensitive{margin:0 22px 6px; padding:10px 14px; background:#B5766A1c; border-left:3px solid var(--clay); font-size:13px; line-height:1.5; opacity:.85;}
+  .events{padding:4px 20px 12px;}
+  .events h4{font-family:'Spline Sans Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; opacity:.5; margin:12px 0 4px;}
+  .event{display:grid; grid-template-columns:52px 1fr; gap:14px; padding:16px 0; border-bottom:1px solid #1C2A2E18;}
+  .event:last-child{border-bottom:none;}
+  .event.hl{background:#D98F3A18; margin:0 -10px; padding:16px 10px; border-radius:3px;}
+  .event-year{font-family:'Spline Sans Mono',monospace; font-size:15px; font-weight:500; color:var(--glow); padding-top:2px;}
+  .event h3{font-family:'Fraunces',serif; font-size:18px; font-weight:600; margin:0 0 6px;}
+  .event p{font-size:14.5px; line-height:1.5; opacity:.8; margin:0 0 10px;}
+  .tagbar{display:flex; flex-wrap:wrap; gap:7px; margin:14px 0 4px; align-items:center;}
+  .tagbar .tb-label{font-family:'Spline Sans Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; opacity:.5; margin-right:4px;}
+  .tchip{font-family:'Spline Sans Mono',monospace; font-size:11px; letter-spacing:.04em; padding:5px 11px; border:1.5px solid currentColor; border-radius:2px; background:transparent; cursor:pointer; opacity:.5; transition:opacity .15s, background .15s;}
+  .tchip:hover{opacity:.85;}
+  .tchip.on{opacity:1; background:color-mix(in srgb, currentColor 16%, transparent); font-weight:500;}
+  .tchip:focus-visible{outline:2px solid var(--glow); outline-offset:2px;}
+  .tclear{font-family:'Spline Sans Mono',monospace; font-size:11px; padding:5px 10px; border:1.5px dashed #1C2A2E55; border-radius:2px; background:transparent; color:var(--ink); cursor:pointer; opacity:.6;}
+  .tclear:hover{opacity:1;}
+
+  .event-figs{margin:0 0 10px;}
+  .event-figs.multi{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .event-fig{margin:0;}
+  .event-img{width:100%; max-width:340px; border-radius:3px; display:block; border:1px solid #1C2A2E22; background:#1c2a2e08;}
+  .event-figs.multi .event-img{max-width:100%;}
+  .event-img-cap{font-size:11px; opacity:.55; margin-top:4px; font-style:italic;}
+  .event-src{font-size:11px; opacity:.5; margin-top:8px; font-family:'Spline Sans Mono',monospace; line-height:1.5;}
+
+  .deep{margin:2px 0 4px;}
+  .deep-detail{font-size:14.5px; line-height:1.62; opacity:.9; margin:0 0 10px;}
+  .why{font-size:14px; line-height:1.55; padding:10px 14px; margin:0 0 4px; background:#4E7A6B14; border-left:3px solid var(--tag-economy); border-radius:0 3px 3px 0;}
+  .why-label{display:block; font-family:'Spline Sans Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--tag-economy); margin-bottom:4px; opacity:.9;}
+  .expand{display:inline-block; margin:10px 0 0; font-family:'Spline Sans Mono',monospace; font-size:11px; letter-spacing:.08em; padding:6px 12px; background:transparent; color:var(--ink); border:1.5px solid #1C2A2E44; border-radius:2px; cursor:pointer; transition:background .15s,border-color .15s;}
+  .expand:hover{background:#D98F3A22; border-color:var(--glow);}
+  .expand:focus-visible{outline:2px solid var(--glow); outline-offset:2px;}
+  .deep[hidden]{display:none;}
+  .tags{display:flex; gap:6px; flex-wrap:wrap;}
+  .tag{font-family:'Spline Sans Mono',monospace; font-size:10px; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:2px; border:1px solid;}
+  .sources{padding:6px 22px 20px; border-top:1px solid #1C2A2E18;}
+  .sources h4{font-family:'Spline Sans Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; opacity:.5; margin:14px 0 8px;}
+  .sources p{font-size:13px; line-height:1.55; opacity:.75; margin:0 0 6px;}
+  .sources a{color:#4E7A6B;}
+  .placeholder{border:1.5px dashed #1C2A2E33; border-radius:4px; padding:40px 24px; text-align:center; font-size:15px; opacity:.6; line-height:1.6;}
+  footer{margin-top:36px; padding-top:16px; border-top:1px solid #1C2A2E22; font-family:'Spline Sans Mono',monospace; font-size:11px; opacity:.5; letter-spacing:.03em; text-align:center; line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="kicker">TERRA CHRONICA</div>
+  <h1>What was happening everywhere, all at once.</h1>
+  <p class="sub">Pick a year, or search for a period. The globe glows where the world was stirring; click a place to lock onto it, then open any event to read the fuller story and why it mattered.</p>
+  <div class="stat" id="stat"></div>
+
+  <div class="searchbar">
+    <input id="search" type="text" placeholder="Search a period or event — e.g. Bolsheviks, Byzantine, Mansa Musa, Maya…" autocomplete="off" />
+    <span class="mag">⌕</span>
+    <div class="results" id="results"></div>
+  </div>
+
+  <div class="controls">
+    <div class="year-box">
+      <input id="year-input" value="1865" aria-label="Year — accepts 1865 or 480 BCE" />
+      <button id="go">Go</button>
+    </div>
+    <button class="random" id="random">⤺ Random year</button>
+    <label class="toggle"><input type="checkbox" id="dense" checked /> <span>Prefer eventful years</span></label>
+  </div>
+
+  <input type="range" id="slider" min="-800" max="2025" value="1865" aria-label="Year slider" />
+  <div class="scale-note"><span>800 BCE</span><span>1 CE</span><span>800</span><span>1500</span><span>2025</span></div>
+
+  <div class="tagbar" id="tagbar" aria-label="Filter by category"></div>
+
+  <div class="layout">
+    <div class="col-map">
+      <div class="current-year" id="current-year">1865</div>
+      <div class="window-note" id="window-note"></div>
+      <div class="globe-wrap">
+        <div id="globe"></div>
+        <div class="globe-status" id="globe-status">Loading map…</div>
+        <div class="anachro-note">Markers use modern borders as reference points — many of these states didn't exist in earlier centuries.</div>
+        <div class="paused-badge" id="paused-badge">◼ LOCKED</div>
+        <div class="globe-hud">drag · scroll to zoom · click a place</div>
+      </div>
+      <div class="globe-controls">
+        <button id="zoom-out" title="Zoom out">−</button>
+        <span class="label">ZOOM</span>
+        <button id="zoom-in" title="Zoom in">+</button>
+        <button id="spin-toggle" title="Play/pause spin" style="width:auto; padding:0 10px; margin-left:10px;">❚❚ spin</button>
+      </div>
+      <div class="legend">
+        <div class="item"><span class="swatch active"></span> Events near this year</div>
+        <div class="item"><span class="swatch quiet"></span> Featured place, quiet now</div>
+        <div class="item"><span class="swatch indig"></span> Indigenous history</div>
+      </div>
+    </div>
+    <div class="col-info" id="detail"></div>
+  </div>
+
+  <footer>
+    Terra Chronica · 800 BCE–2025 · modern country outlines: Natural Earth (public domain) · images via Wikimedia Commons.<br>
+    A strong foundation, not an exhaustive history. Coverage thins the further back you go, so the year window widens automatically. Featured events cite specific works; briefer entries carry a placeholder source pending citation. Indigenous histories are a respectful scaffold, not authoritative.
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<script>
+/* ===========================================================================
+   DATA LAYER — kept as one clearly separated object so it can later be lifted
+   out into an external JSON file (fetch) without touching the app code below.
+   Schema:
+     REGIONS[key] = { name, lat, lon, iso?, sensitive? }
+     EVENTS[]     = { id, region, year, title, blurb, tags[], source, image?, imageCaption? }
+     ERAS[]       = { id, region, name, start, end, long, source }
+=========================================================================== */
+function commons(file, w){ return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=${w||440}`; }
+// A small helper for building an image object {src, cap} from a Commons filename.
+function img(file, cap, w){ return {src:commons(file,w), cap:cap||""}; }
+const SRC = "Compiled from general reference (verify for production)";
+
+const REGIONS = {
+  us:{name:"United States",lat:39,lon:-98,iso:840},
+  uk:{name:"United Kingdom",lat:54,lon:-2,iso:826},
+  ireland:{name:"Ireland",lat:53,lon:-8,iso:372},
+  france:{name:"France",lat:47,lon:2,iso:250},
+  germany:{name:"Germany",lat:51,lon:10,iso:276},
+  italy:{name:"Italy",lat:43,lon:12,iso:380},
+  spain:{name:"Spain",lat:40,lon:-4,iso:724},
+  netherlands:{name:"Netherlands",lat:52,lon:5,iso:528},
+  russia:{name:"Russia",lat:58,lon:50,iso:643},
+  poland:{name:"Poland",lat:52,lon:19,iso:616},
+  greece:{name:"Greece / Byzantium",lat:39,lon:22,iso:300},
+  turkey:{name:"Türkiye / Ottoman lands",lat:39,lon:35,iso:792},
+  iran:{name:"Iran / Persia",lat:32,lon:53,iso:364},
+  egypt:{name:"Egypt",lat:26,lon:30,iso:818},
+  ethiopia:{name:"Ethiopia",lat:9,lon:40,iso:231},
+  mali:{name:"Mali / West Africa",lat:17,lon:-4,iso:466},
+  southafrica:{name:"South Africa",lat:-29,lon:24,iso:710},
+  china:{name:"China",lat:35,lon:104,iso:156},
+  japan:{name:"Japan",lat:36,lon:138,iso:392},
+  korea:{name:"Korea",lat:37,lon:128,iso:410},
+  india:{name:"India",lat:22,lon:79,iso:356},
+  indonesia:{name:"Indonesia",lat:-2,lon:118,iso:360},
+  iraq:{name:"Mesopotamia / Iraq",lat:33,lon:44,iso:368},
+  maya:{name:"Maya Civilization",lat:17.5,lon:-89,iso:null,sensitive:true},
+  mongolia:{name:"Mongolia",lat:47,lon:105,iso:496},
+  vietnam:{name:"Vietnam",lat:16,lon:108,iso:704},
+  nigeria:{name:"Nigeria / West Africa",lat:9,lon:8,iso:566},
+  brazil:{name:"Brazil",lat:-10,lon:-52,iso:76},
+  mexico:{name:"Mexico",lat:23,lon:-102,iso:484},
+  peru:{name:"Peru / Andes",lat:-12,lon:-75,iso:604},
+  argentina:{name:"Argentina",lat:-34,lon:-64,iso:32},
+  australia:{name:"Australia",lat:-25,lon:134,iso:36},
+  canada:{name:"Canada",lat:56,lon:-106,iso:124},
+  lakota:{name:"Lakota & the Plains Nations",lat:44,lon:-101,sensitive:true},
+  aztec:{name:"Aztec & Mesoamerica",lat:19,lon:-99,sensitive:true},
+  inca:{name:"Inca Empire",lat:-13,lon:-72,sensitive:true},
+  aboriginal:{name:"Aboriginal Australia",lat:-25,lon:134,sensitive:true},
+};
+
+function ev(region,year,title,blurb,tags,extra){
+  const base={
+    id:`${region}-${year}-${title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')}`,
+    region,year,title,blurb,tags,source:SRC
+  };
+  const e=Object.assign(base, extra||{});
+  // Normalize imagery into a single `images` array so cards can show 1..n figures.
+  // Supports the legacy {image, imageCaption} shape and a new {images:[img(...)]}.
+  if(!e.images){
+    e.images = e.image ? [{src:e.image, cap:e.imageCaption||""}] : [];
+  }
+  return e;
+}
+function era(region,name,start,end,long){ return {id:`era-${region}-${start}`, region,name,start:+start,end:+end,long,source:SRC}; }
+
+const EVENTS = [
+  // ===== EUROPE =====
+  // United States
+  ev("us",1607,"Jamestown founded","England's first permanent American colony is established in Virginia.",["expansion","society"]),
+  ev("us",1776,"Declaration of Independence","The thirteen colonies declare independence from Britain.",["politics","war"],{image:commons("United_States_Declaration_of_Independence.jpg"),imageCaption:"Declaration of Independence (Wikimedia Commons)"}),
+  ev("us",1787,"US Constitution","A new framework of government is drafted in Philadelphia.",["politics"]),
+  ev("us",1803,"Louisiana Purchase","The US buys ~828,000 sq mi from France, doubling the nation's size.",["politics","expansion"]),
+  ev("us",1861,"Civil War begins","Secession of Southern states leads to four years of war over slavery and union.",["war","politics"]),
+  ev("us",1863,"Emancipation Proclamation","Lincoln declares enslaved people in rebel states to be free.",["society","politics"]),
+  ev("us",1865,"Reconstruction begins","After the war, the federal government rebuilds the South and redefines citizenship.",["politics","society"],{image:commons("First_Vote_by_A.R._Waud_1867.jpg"),imageCaption:"'The First Vote', 1867 (Wikimedia Commons)"}),
+  ev("us",1869,"Transcontinental Railroad","East and west rail lines meet at Promontory Summit, Utah.",["infrastructure","science"],{image:commons("East_and_West_Shaking_hands_at_the_laying_of_last_rail_Union_Pacific_Railroad_-_Restoration.jpg"),imageCaption:"The 'golden spike', 1869 (Wikimedia Commons)"}),
+  ev("us",1920,"Women win the vote","The 19th Amendment guarantees women's suffrage.",["society","politics"]),
+  ev("us",1929,"Wall Street Crash","The market collapse triggers the Great Depression.",["economy"]),
+  ev("us",1945,"End of WWII","The US emerges as a global superpower after the war ends in the Pacific.",["war","politics"]),
+  ev("us",1963,"March on Washington","MLK's 'I Have a Dream' speech marks the civil rights movement's height.",["society","politics"]),
+  ev("us",1969,"Apollo 11 Moon landing","Humans walk on the Moon for the first time.",["science"],{image:commons("Aldrin_Apollo_11_original.jpg"),imageCaption:"Buzz Aldrin on the Moon, 1969 (NASA / Wikimedia Commons)"}),
+
+  // United Kingdom
+  ev("uk",1485,"Tudor dynasty begins","Henry VII wins the Wars of the Roses at Bosworth.",["politics","war"]),
+  ev("uk",1534,"English Reformation","Henry VIII breaks with Rome and founds the Church of England.",["religion","politics"]),
+  ev("uk",1588,"Defeat of the Armada","England repels the Spanish invasion fleet.",["war"]),
+  ev("uk",1600,"Shakespeare's height","English drama flowers as Shakespeare writes his greatest plays.",["culture"]),
+  ev("uk",1642,"English Civil War","War between Crown and Parliament ends in the king's execution.",["war","politics"]),
+  ev("uk",1688,"Glorious Revolution","A largely bloodless change of monarchs entrenches parliamentary power.",["politics"]),
+  ev("uk",1707,"Act of Union","England and Scotland unite to form Great Britain.",["politics"]),
+  ev("uk",1769,"Industrial Revolution","Watt's steam engine helps launch the industrial age in Britain.",["science","economy"]),
+  ev("uk",1837,"Victoria crowned","Queen Victoria's reign begins; the empire expands across the century.",["politics","society"],{image:commons("Queen_Victoria_by_Bassano.jpg"),imageCaption:"Queen Victoria (Wikimedia Commons)"}),
+  ev("uk",1914,"Enters WWI","Britain joins the First World War following the invasion of Belgium.",["war"]),
+  ev("uk",1940,"The Blitz","German bombing tests British resolve during WWII.",["war"]),
+  ev("uk",1948,"NHS founded","The National Health Service launches universal healthcare.",["society","politics"]),
+
+  // Ireland
+  ev("ireland",1690,"Battle of the Boyne","A decisive battle shapes centuries of Irish political and religious division.",["war","religion"]),
+  ev("ireland",1845,"The Great Famine","Potato blight triggers mass starvation and emigration.",["society"]),
+  ev("ireland",1916,"Easter Rising","An armed rebellion in Dublin galvanizes the independence movement.",["war","politics"]),
+  ev("ireland",1922,"Irish Free State","Most of Ireland gains independence from the United Kingdom.",["politics"]),
+
+  // France
+  ev("france",1431,"Joan of Arc executed","The French heroine is burned at the stake during the Hundred Years' War.",["war","religion"]),
+  ev("france",1598,"Edict of Nantes","Henry IV grants religious tolerance, easing France's wars of religion.",["religion","politics"]),
+  ev("france",1643,"Louis XIV takes the throne","The 'Sun King' begins a long reign of absolute monarchy at Versailles.",["politics","culture"]),
+  ev("france",1789,"French Revolution begins","The storming of the Bastille ignites a revolution that topples the monarchy.",["politics","society"],{image:commons("Prise_de_la_Bastille.jpg"),imageCaption:"The storming of the Bastille, 1789 (Wikimedia Commons)"}),
+  ev("france",1804,"Napoleon crowned Emperor","Napoleon Bonaparte makes himself Emperor of the French.",["politics","war"],{image:commons("Jacques-Louis_David_-_The_Coronation_of_Napoleon_(1805-1807).jpg"),imageCaption:"David, 'The Coronation of Napoleon' (Wikimedia Commons)"}),
+  ev("france",1848,"February Revolution","Revolution topples the monarchy and founds the Second Republic.",["politics","society"]),
+  ev("france",1889,"Eiffel Tower","Built for the World's Fair, it becomes the symbol of modern Paris.",["infrastructure","culture"]),
+  ev("france",1944,"Liberation of Paris","Allied and Free French forces free the capital from Nazi occupation.",["war"]),
+
+  // Germany
+  ev("germany",1440,"Gutenberg's printing press","Movable-type printing in Mainz begins a revolution in knowledge.",["science","society"]),
+  ev("germany",1517,"Luther's 95 Theses","Martin Luther's challenge to the Church sparks the Protestant Reformation.",["religion","society"],{image:commons("Luther46c.jpg"),imageCaption:"Martin Luther (Wikimedia Commons)"}),
+  ev("germany",1618,"Thirty Years' War begins","A devastating religious and political war engulfs central Europe until 1648.",["war","religion"]),
+  ev("germany",1871,"German unification","The German states unite into a single empire under Prussia.",["politics"]),
+  ev("germany",1919,"Weimar Republic","A fragile democracy is founded after defeat in WWI.",["politics"]),
+  ev("germany",1933,"Nazi seizure of power","Hitler becomes chancellor, ending the Weimar Republic.",["politics","war"]),
+  ev("germany",1939,"WWII begins","Germany's invasion of Poland starts the Second World War in Europe.",["war"]),
+  ev("germany",1989,"Fall of the Berlin Wall","The wall dividing East and West falls, leading to reunification.",["politics","society"],{image:commons("Thefalloftheberlinwall1989.JPG"),imageCaption:"The Berlin Wall falls, 1989 (Wikimedia Commons)"}),
+
+  // Italy
+  ev("italy",1440,"Height of the Renaissance","Florence and the Italian city-states drive a rebirth of art and learning.",["culture","science"]),
+  ev("italy",1503,"Leonardo paints the Mona Lisa","Leonardo begins his most famous work amid a flowering of Renaissance art.",["culture"],{image:commons("Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg"),imageCaption:"Leonardo, 'Mona Lisa' (Wikimedia Commons)"}),
+  ev("italy",1633,"Galileo condemned","The astronomer is tried by the Inquisition for defending a sun-centred cosmos.",["science","religion"]),
+  ev("italy",1861,"Unification of Italy","Centuries of division end as the Kingdom of Italy is proclaimed.",["politics"]),
+  ev("italy",1922,"Mussolini's March on Rome","Fascists seize power, establishing Europe's first fascist regime.",["politics","war"]),
+
+  // Spain
+  ev("spain",1469,"Union of Castile & Aragon","The marriage of Ferdinand and Isabella lays the foundation of a unified Spain.",["politics"]),
+  ev("spain",1492,"Reconquista & Columbus","Granada falls and Castile funds Columbus's voyage west, opening the Americas.",["war","expansion"]),
+  ev("spain",1519,"Cortés lands in Mexico","A Spanish expedition begins the conquest of the Aztec Empire.",["war","expansion"]),
+  ev("spain",1588,"The Spanish Armada","Spain's great fleet fails to invade England, denting its naval supremacy.",["war"]),
+  ev("spain",1808,"Peninsular War","Napoleon's invasion sparks a brutal war and the loss of American colonies.",["war"]),
+  ev("spain",1936,"Spanish Civil War","A brutal civil war ends in the dictatorship of Francisco Franco.",["war","politics"]),
+
+  // Netherlands
+  ev("netherlands",1568,"Dutch Revolt begins","The Low Countries rise against Spanish rule, beginning the Eighty Years' War.",["war","politics"]),
+  ev("netherlands",1602,"Dutch East India Company","The world's first multinational corporation launches a global trading empire.",["economy","expansion"]),
+  ev("netherlands",1648,"Dutch independence","The Peace of Westphalia recognizes the independent Dutch Republic.",["politics"]),
+  ev("netherlands",1667,"Dutch Golden Age","Rembrandt and Vermeer flourish as Amsterdam becomes a world commercial hub.",["culture","economy"]),
+
+  // Russia
+  ev("russia",1547,"Ivan the Terrible crowned","Ivan IV becomes the first Tsar of all Russia, expanding the state.",["politics"]),
+  ev("russia",1613,"Romanov dynasty begins","The Romanovs take the throne, beginning three centuries of rule.",["politics"]),
+  ev("russia",1703,"St Petersburg founded","Peter the Great builds a new westward-looking capital and modernizes Russia.",["politics","infrastructure"]),
+  ev("russia",1812,"Napoleon's invasion","The French invasion of Russia ends in catastrophic retreat.",["war"]),
+  ev("russia",1861,"Emancipation of the serfs","Tsar Alexander II frees millions of serfs across the empire.",["society","politics"]),
+  ev("russia",1917,"Bolshevik Revolution","Lenin's Bolsheviks seize power, founding the world's first communist state.",["politics","war"],{image:commons("19191107-lenin_second_anniversary_october_revolution_moscow.jpg"),imageCaption:"Lenin addressing crowds, 1919 (Wikimedia Commons)"}),
+  ev("russia",1922,"USSR founded","The Bolshevik victory in the civil war creates the Soviet Union.",["politics"]),
+  ev("russia",1941,"Nazi invasion of the USSR","Operation Barbarossa opens the deadliest theatre of WWII.",["war"]),
+  ev("russia",1991,"Collapse of the USSR","The Soviet Union dissolves into fifteen independent republics.",["politics"]),
+
+  // Poland
+  ev("poland",1410,"Battle of Grunwald","Poland-Lithuania crushes the Teutonic Knights, becoming a major power.",["war"]),
+  ev("poland",1569,"Polish-Lithuanian Commonwealth","A vast union becomes one of Europe's largest and most diverse states.",["politics"]),
+  ev("poland",1795,"Partitions of Poland","Poland is erased from the map, divided among Russia, Prussia, and Austria.",["politics","war"]),
+  ev("poland",1918,"Poland reborn","Poland regains independence after more than a century of partition.",["politics"]),
+  ev("poland",1980,"Solidarity movement","A mass workers' movement challenges communist rule.",["society","politics"]),
+
+  // Greece / Byzantium
+  ev("greece",1453,"Fall of Constantinople","The Ottomans capture the Byzantine capital, ending the thousand-year Eastern Roman Empire.",["war","politics"],{image:commons("Zonaro_GggFatih.jpg"),imageCaption:"Ottoman entry into Constantinople, 1453 (Wikimedia Commons)"}),
+  ev("greece",1821,"Greek War of Independence","Greeks rise against Ottoman rule, winning a modern nation-state.",["war","politics"]),
+  ev("greece",1896,"First modern Olympics","The Olympic Games are revived in Athens.",["culture","society"]),
+
+  // ===== MIDDLE EAST & AFRICA =====
+  // Ottoman lands
+  ev("turkey",1453,"Ottoman conquest","Mehmed II takes Constantinople and makes it the Ottoman capital.",["war","politics"]),
+  ev("turkey",1520,"Suleiman the Magnificent","The Ottoman Empire reaches its cultural and military zenith.",["politics","culture"]),
+  ev("turkey",1683,"Siege of Vienna","The failed second siege marks the limit of Ottoman expansion in Europe.",["war"]),
+  ev("turkey",1923,"Republic of Türkiye","Atatürk founds a secular republic from the ruins of the empire.",["politics"]),
+
+  // Iran / Persia
+  ev("iran",1501,"Safavid dynasty founded","Shah Ismail I establishes the Safavid Empire and makes Shia Islam the state religion.",["politics","religion"]),
+  ev("iran",1587,"Reign of Abbas the Great","The Safavid Empire flourishes; Isfahan becomes a jewel of Persian art.",["culture","politics"]),
+  ev("iran",1736,"Nader Shah's conquests","A brilliant conqueror briefly makes Persia the dominant power in the region.",["war","politics"]),
+  ev("iran",1906,"Constitutional Revolution","Popular movements win Persia's first constitution and parliament.",["politics","society"]),
+  ev("iran",1979,"Islamic Revolution","The monarchy falls and an Islamic republic is established.",["politics","religion"]),
+
+  // Egypt
+  ev("egypt",1517,"Ottoman conquest of Egypt","The Mamluk Sultanate falls and Egypt becomes an Ottoman province.",["war","politics"]),
+  ev("egypt",1798,"Napoleon in Egypt","The French invasion begins Egypt's collision with modern Europe.",["war","science"]),
+  ev("egypt",1805,"Muhammad Ali's reforms","Muhammad Ali modernizes Egypt into a powerful semi-independent state.",["politics","economy"]),
+  ev("egypt",1869,"Suez Canal opens","The canal transforms global trade by linking the Mediterranean and Red Sea.",["infrastructure","economy"],{image:commons("Suez_Canal_opening.jpg"),imageCaption:"Opening of the Suez Canal, 1869 (Wikimedia Commons)"}),
+  ev("egypt",1952,"Egyptian Revolution","Nasser's officers overthrow the monarchy and reshape the Arab world.",["politics"]),
+
+  // Ethiopia
+  ev("ethiopia",1636,"Gondar founded","A new imperial capital anchors a golden age of Ethiopian culture.",["politics","culture"]),
+  ev("ethiopia",1896,"Battle of Adwa","Ethiopia defeats Italy, remaining Africa's uncolonized independent power.",["war","politics"]),
+  ev("ethiopia",1930,"Haile Selassie crowned","The emperor begins a reign that will span the century's upheavals.",["politics"]),
+  ev("ethiopia",1935,"Italian invasion","Fascist Italy invades with aircraft and poison gas; Ethiopia's appeal to the League of Nations goes unanswered.",["war","politics"]),
+  ev("ethiopia",1974,"Fall of the monarchy","A Marxist junta, the Derg, deposes Haile Selassie, ending a millennia-old imperial line.",["politics","society"]),
+
+  // Mali / West Africa
+  ev("mali",1464,"Songhai Empire rises","Sonni Ali builds one of West Africa's largest empires along the Niger.",["politics","expansion"]),
+  ev("mali",1591,"Fall of Songhai","A Moroccan invasion shatters the Songhai Empire.",["war"]),
+  ev("mali",1600,"Timbuktu's scholarship","Timbuktu remains a renowned centre of Islamic learning and trade.",["culture","religion"]),
+  ev("mali",1893,"French conquest","France seizes Timbuktu and the Niger bend, folding the region into French West Africa.",["war","expansion"]),
+  ev("mali",1960,"Independence","Mali wins independence from France after briefly federating with Senegal.",["politics"]),
+
+  // Nigeria / West Africa
+  ev("nigeria",1440,"Benin Bronzes flourish","The Kingdom of Benin produces its renowned cast-brass plaques and heads, among Africa's great art traditions.",["culture","politics"]),
+  ev("nigeria",1804,"Sokoto Caliphate founded","Usman dan Fodio's jihad establishes one of Africa's largest pre-colonial states across the Sahel.",["religion","politics"]),
+  ev("nigeria",1897,"Sack of Benin","A British punitive expedition burns Benin City and loots thousands of its bronzes, now scattered in museums worldwide.",["war","culture"]),
+  ev("nigeria",1914,"Colony amalgamated","Britain merges its northern and southern protectorates into a single colony of Nigeria.",["politics","expansion"]),
+  ev("nigeria",1960,"Independence","Nigeria becomes independent, Africa's most populous nation.",["politics"]),
+  ev("nigeria",1967,"Biafran War","The southeast's secession triggers a civil war and famine that kills over a million.",["war","society"]),
+
+  // Vietnam
+  ev("vietnam",1428,"Lê dynasty founded","Lê Lợi expels Ming Chinese occupiers and founds a dynasty that will rule for centuries.",["war","politics"]),
+  ev("vietnam",1802,"Nguyễn dynasty unifies","Gia Long unites north and south under Vietnam's last imperial dynasty, with a capital at Huế.",["politics"]),
+  ev("vietnam",1858,"French conquest begins","France attacks Đà Nẵng, opening decades of colonization that create French Indochina.",["war","expansion"]),
+  ev("vietnam",1945,"Independence declared","Hồ Chí Minh proclaims the Democratic Republic of Vietnam as Japanese occupation collapses.",["politics"]),
+  ev("vietnam",1954,"Dien Bien Phu","Viet Minh forces crush the French garrison, ending colonial rule and splitting the country in two.",["war","politics"]),
+  ev("vietnam",1975,"Fall of Saigon","North Vietnamese tanks enter Saigon, ending the war and reunifying the country under communist rule.",["war","politics"]),
+
+  // South Africa
+  ev("southafrica",1652,"Cape Colony founded","The Dutch establish a settlement at the Cape, reshaping the region.",["expansion","society"]),
+  ev("southafrica",1879,"Anglo-Zulu War","The Zulu kingdom fights British invasion, winning a famous victory at Isandlwana.",["war"]),
+  ev("southafrica",1948,"Apartheid begins","The National Party institutes a system of rigid racial segregation.",["politics","society"]),
+  ev("southafrica",1994,"End of apartheid","Nelson Mandela is elected in South Africa's first democratic vote.",["politics","society"],{image:commons("Nelson_Mandela_1994.jpg"),imageCaption:"Nelson Mandela, 1994 (Wikimedia Commons)"}),
+  // ===== ASIA & OCEANIA =====
+  // China
+  ev("china",1405,"Zheng He's voyages","Ming China launches vast treasure fleets across the Indian Ocean.",["expansion","economy"]),
+  ev("china",1420,"Forbidden City completed","The Ming build their monumental imperial palace in Beijing.",["culture","politics"]),
+  ev("china",1644,"Qing dynasty founded","The Manchu Qing replace the Ming, beginning China's last imperial dynasty.",["politics"]),
+  ev("china",1839,"First Opium War","Conflict with Britain begins a 'century of humiliation'.",["war","economy"]),
+  ev("china",1850,"Taiping Rebellion","One of history's deadliest civil wars convulses the Qing dynasty.",["war","society"]),
+  ev("china",1911,"Xinhai Revolution","The Qing dynasty falls; the Republic of China is founded.",["politics"]),
+  ev("china",1949,"People's Republic founded","Mao Zedong proclaims the PRC after the communist victory.",["politics"]),
+  ev("china",1978,"Reform and opening-up","Deng Xiaoping's reforms begin decades of rapid economic growth.",["economy","politics"]),
+
+  // Japan
+  ev("japan",1467,"Ōnin War","Civil war plunges Japan into the century-long 'Warring States' period.",["war"]),
+  ev("japan",1603,"Tokugawa shogunate","Ieyasu unifies Japan, beginning 250 years of peace and isolation.",["politics"]),
+  ev("japan",1853,"Perry's Black Ships","US warships force Japan to open to foreign trade.",["politics","economy"]),
+  ev("japan",1868,"Meiji Restoration","Japan begins its own rapid modernization.",["politics","society"],{image:commons("Meiji_tenno1.jpg"),imageCaption:"The Meiji Emperor (Wikimedia Commons)"}),
+  ev("japan",1904,"Russo-Japanese War","Japan defeats Russia, stunning the Western powers.",["war"]),
+  ev("japan",1945,"WWII ends","Atomic bombings and surrender end the war and begin US occupation.",["war","politics"]),
+  ev("japan",1964,"Tokyo Olympics","Japan announces its postwar recovery; the bullet train debuts.",["society","infrastructure"]),
+
+  // Korea
+  ev("korea",1443,"Hangul created","King Sejong introduces the Korean alphabet, a landmark of literacy.",["culture","science"]),
+  ev("korea",1592,"Imjin War","Korea, aided by China, repels a massive Japanese invasion.",["war"]),
+  ev("korea",1910,"Japanese annexation","Japan annexes Korea, beginning 35 years of colonial rule.",["politics","war"]),
+  ev("korea",1950,"Korean War","War divides the peninsula into North and South.",["war","politics"]),
+
+  // India
+  ev("india",1526,"Mughal Empire founded","Babur's victory at Panipat establishes the Mughal Empire.",["politics","war"]),
+  ev("india",1556,"Reign of Akbar","The Mughal Empire flourishes under Akbar's tolerant, expansive rule.",["politics","culture"]),
+  ev("india",1632,"Taj Mahal begun","Shah Jahan begins the great mausoleum at the height of Mughal art.",["culture"],{image:commons("Taj_Mahal_(Edited).jpeg"),imageCaption:"The Taj Mahal (Wikimedia Commons)"}),
+  ev("india",1757,"Battle of Plassey","The East India Company's victory begins British dominance in India.",["war","politics"]),
+  ev("india",1857,"Indian Rebellion","A major uprising leads to direct British Crown rule.",["war","politics"]),
+  ev("india",1930,"Salt March","Gandhi's campaign of civil disobedience galvanizes the independence movement.",["politics","society"]),
+  ev("india",1947,"Independence & Partition","India wins independence; partition creates India and Pakistan amid mass displacement.",["politics","society"],{image:commons("Jawaharlal_Nehru_delivering_his_famous_speech_-_Tryst_with_Destiny.jpg"),imageCaption:"Nehru's independence speech, 1947 (Wikimedia Commons)"}),
+
+  // Indonesia
+  ev("indonesia",1511,"Fall of Malacca","The Portuguese seize the great spice-trade port, opening the East Indies to Europe.",["war","economy"]),
+  ev("indonesia",1619,"Dutch Batavia","The Dutch found Batavia (Jakarta), centre of their spice empire.",["expansion","economy"]),
+  ev("indonesia",1830,"Java War ends","A costly five-year revolt against Dutch rule is crushed; the Dutch impose a forced-cultivation system.",["war","economy"]),
+  ev("indonesia",1883,"Krakatoa erupts","One of history's most violent eruptions kills tens of thousands and cools the global climate for years.",["society","science"]),
+  ev("indonesia",1945,"Indonesian independence","Sukarno declares independence from Dutch rule.",["politics"]),
+
+  // Australia
+  ev("australia",1770,"Cook charts the east coast","James Cook maps eastern Australia, opening it to British settlement.",["expansion"]),
+  ev("australia",1788,"First Fleet arrives","Britain establishes a penal colony at Sydney, beginning colonization.",["expansion","society"]),
+  ev("australia",1901,"Federation","The Australian colonies unite into a single nation.",["politics"]),
+
+  // Canada
+  ev("canada",1608,"Quebec founded","Champlain establishes the heart of New France.",["expansion"]),
+  ev("canada",1759,"Battle of Quebec","Britain defeats France, gaining control of Canada.",["war","politics"]),
+  ev("canada",1867,"Canadian Confederation","Canada becomes a self-governing dominion.",["politics"]),
+
+  // ===== THE AMERICAS =====
+  // Brazil
+  ev("brazil",1500,"Portuguese arrival","Cabral claims Brazil for Portugal, beginning colonization.",["expansion"]),
+  ev("brazil",1808,"Portuguese court arrives","Fleeing Napoleon, the Portuguese monarchy relocates to Rio de Janeiro.",["politics"]),
+  ev("brazil",1822,"Independence declared","Brazil breaks from Portugal, becoming an empire under Pedro I.",["politics"]),
+  ev("brazil",1888,"Slavery abolished","The Lei Áurea ends slavery — the last country in the Americas to do so.",["society","politics"]),
+  ev("brazil",1960,"Brasília inaugurated","A brand-new modernist capital is built inland from scratch.",["infrastructure","politics"]),
+
+  // Mexico
+  ev("mexico",1521,"Fall of Tenochtitlan","The Aztec capital falls to Spanish forces and their Indigenous allies.",["war","society"]),
+  ev("mexico",1810,"War of Independence","The 'Grito de Dolores' launches Mexico's fight for freedom from Spain.",["war","politics"]),
+  ev("mexico",1846,"Mexican-American War","Mexico loses vast northern territories to the United States.",["war"]),
+  ev("mexico",1910,"Mexican Revolution","A decade of revolution overturns the old order and reshapes the nation.",["war","politics"]),
+
+  // Peru / Andes
+  ev("peru",1438,"Inca Empire expands","Pachacuti transforms the Inca into the largest empire in the Americas.",["politics","expansion"]),
+  ev("peru",1533,"Spanish conquest of the Inca","Pizarro's forces capture and execute the Inca emperor, toppling the empire.",["war","society"]),
+  ev("peru",1780,"Túpac Amaru II revolt","A great Indigenous uprising challenges Spanish rule in the Andes.",["war","society"]),
+  ev("peru",1821,"Peruvian independence","San Martín proclaims independence from Spain.",["politics","war"]),
+
+  // Argentina
+  ev("argentina",1816,"Argentine independence","The United Provinces declare independence from Spain.",["politics"]),
+  ev("argentina",1946,"Perón era begins","Juan Perón's populist movement reshapes Argentine politics.",["politics","society"]),
+  ev("argentina",1976,"Military coup & Dirty War","A junta seizes power and 'disappears' tens of thousands in a campaign of state terror.",["politics","war"]),
+  ev("argentina",1983,"Return to democracy","After defeat in the Falklands War, the junta collapses and civilian rule returns.",["politics","society"]),
+
+  // ===== INDIGENOUS NATIONS =====
+  ev("aztec",1428,"Aztec Triple Alliance","Three city-states form the alliance that builds the Aztec Empire.",["politics","expansion"]),
+  ev("aztec",1487,"Great Temple dedicated","The Templo Mayor of Tenochtitlan is expanded at the empire's height.",["culture","religion"]),
+  ev("aztec",1521,"Fall of the empire","The Spanish conquest ends Aztec rule over central Mexico.",["war","society"]),
+
+  ev("inca",1438,"Empire founded","Pachacuti begins the vast expansion of the Inca state from Cusco.",["politics","expansion"]),
+  ev("inca",1450,"Machu Picchu built","The Inca construct the mountain estate now famous worldwide.",["culture","infrastructure"]),
+  ev("inca",1533,"Spanish conquest","The empire falls to Pizarro after the capture of Atahualpa.",["war","society"]),
+
+  ev("lakota",1851,"Treaty of Fort Laramie","The first Fort Laramie treaty defines territory — promises the US would break.",["politics","society"]),
+  ev("lakota",1868,"Second Treaty of Fort Laramie","The treaty guarantees the Black Hills to the Lakota 'forever'.",["politics"]),
+  ev("lakota",1876,"Battle of the Little Bighorn","Lakota, Cheyenne and Arapaho forces defeat Custer's cavalry.",["war"]),
+  ev("lakota",1890,"Wounded Knee Massacre","US troops kill hundreds of Lakota, ending armed resistance on the Plains.",["war","society"]),
+
+  ev("aboriginal",1820,"Frontier conflict spreads","Colonial settlement accelerates the violent dispossession of Aboriginal lands.",["society","war"]),
+  ev("aboriginal",1937,"Assimilation policy era","Policies intensify the removal of children — the Stolen Generations.",["society","politics"]),
+  ev("aboriginal",1967,"1967 Referendum","Australians vote overwhelmingly to count Aboriginal people in the census.",["politics","society"]),
+  ev("aboriginal",1992,"Mabo decision","Australia's High Court recognizes native title, overturning 'terra nullius'.",["politics","society"]),
+];
+
+const ERAS = [
+  era("us","Colonial era",1607,1776,"Thirteen British colonies grew along the Atlantic seaboard, diverse, restless, and increasingly resentful of imperial control."),
+  era("us","Early Republic",1776,1815,"A new nation defined its institutions and expanded west, its founding promise shadowed by slavery."),
+  era("us","Antebellum era",1815,1861,"Explosive growth deepened the sectional conflict over slavery that compromises only postponed."),
+  era("us","Civil War & Reconstruction",1861,1877,"The bloodiest American war ended slavery and reshaped the nation, followed by a contested effort to rebuild the South."),
+  era("us","Gilded Age & Progressive Era",1877,1917,"Rapid industrial growth and vast inequality provoked waves of reform."),
+  era("us","World Wars & Depression",1917,1945,"Boom, the Great Depression, and two world wars transformed America into a superpower."),
+  era("us","Cold War America",1945,1991,"Superpower rivalry shaped the economy, science, and the civil rights struggle at home."),
+  era("uk","Tudor era",1485,1603,"The Tudors centralized power, broke with Rome, and oversaw a cultural flowering under Elizabeth I."),
+  era("uk","Stuart era",1603,1714,"Civil war, regicide, restoration, and the Glorious Revolution reshaped the English state."),
+  era("uk","Georgian era",1714,1837,"Britain industrialized first among nations and built a global empire."),
+  era("uk","Victorian era",1837,1901,"Queen Victoria's reign saw Britain at the peak of its industrial and imperial power."),
+  era("uk","20th-century Britain",1901,2025,"Two world wars, the loss of empire, and the welfare state transformed the nation."),
+  era("ireland","Under English/British rule",1541,1922,"Centuries of contested rule from London, marked by plantation, famine, and a rising independence movement."),
+  era("ireland","Independent Ireland",1922,2025,"From Free State to Republic, Ireland built its own institutions and modernized."),
+  era("france","Wars of religion",1562,1598,"Decades of conflict between Catholics and Protestants tore France apart."),
+  era("france","Absolute monarchy",1598,1789,"The Bourbon kings, above all Louis XIV, built a centralized, glittering, strained state."),
+  era("france","Revolution & Napoleon",1789,1815,"Revolution swept away the monarchy and remade Europe before Napoleon's defeat."),
+  era("france","19th-century France",1815,1870,"France cycled through restored monarchy, republic, and a second empire."),
+  era("france","Modern Republic",1870,2025,"The Third through Fifth Republics built a modern secular state at Europe's heart."),
+  era("germany","Reformation era",1517,1648,"Luther's revolt shattered religious unity and brought the Thirty Years' War."),
+  era("germany","Confederation era",1648,1871,"A patchwork of German states moved slowly toward unity under Prussia."),
+  era("germany","German Empire",1871,1918,"A unified empire became Europe's industrial powerhouse before WWI."),
+  era("germany","Weimar & Nazi era",1918,1945,"A fragile democracy gave way to Nazi dictatorship, war, and the Holocaust."),
+  era("germany","Divided & reunified",1949,2025,"Split by the Cold War, Germany reunified in 1990."),
+  era("italy","Renaissance",1400,1600,"The Italian city-states led a rebirth of classical learning, art, and science."),
+  era("italy","Foreign domination",1600,1861,"Divided and often foreign-ruled, the peninsula waited centuries for unity."),
+  era("italy","Kingdom & Republic",1861,2025,"Unified Italy moved through monarchy, fascism, and war into a democratic republic."),
+  era("spain","Golden Age",1492,1650,"American silver made Spain Europe's greatest power and a centre of art."),
+  era("spain","Decline of empire",1650,1808,"Spain slowly lost ground as its empire strained and rivals rose."),
+  era("spain","Modern Spain",1808,2025,"Invasion, civil war, dictatorship, and finally democracy reshaped the nation."),
+  era("netherlands","Dutch Revolt",1568,1648,"The Low Countries fought free of Spanish rule over eighty years of war."),
+  era("netherlands","Dutch Golden Age",1602,1700,"A small republic became a global trading and cultural powerhouse."),
+  era("netherlands","Modern Netherlands",1815,2025,"A constitutional kingdom that industrialized and helped build modern Europe."),
+  era("russia","Tsardom of Russia",1547,1721,"From Ivan the Terrible, a centralized Russian state expanded across Eurasia."),
+  era("russia","Imperial Russia",1721,1917,"Peter the Great's westward-looking empire grew vast but reformed slowly."),
+  era("russia","Soviet Union",1917,1991,"Revolution founded a communist state that became a Cold War superpower."),
+  era("russia","Russian Federation",1991,2025,"The Soviet collapse brought upheaval and a contested new order."),
+  era("poland","Jagiellonian & Commonwealth",1400,1795,"Poland-Lithuania became one of Europe's largest and most diverse states."),
+  era("poland","Partitioned Poland",1795,1918,"Erased from the map, Poland survived as a nation without a state."),
+  era("poland","Modern Poland",1918,2025,"Reborn, crushed in war, communist, and finally free after 1989."),
+  era("greece","Ottoman Greece",1453,1821,"After the fall of Byzantium, Greek lands lay under Ottoman rule for centuries."),
+  era("greece","Modern Greece",1821,2025,"Independence built a modern nation on ancient and Byzantine foundations."),
+  era("turkey","Ottoman ascent",1400,1566,"From the fall of Constantinople to Suleiman, the empire became dominant."),
+  era("turkey","Ottoman decline",1566,1922,"A long, uneven decline ended in collapse after WWI."),
+  era("turkey","Republic of Turkiye",1923,2025,"Ataturk built a secular, modernizing republic."),
+  era("iran","Safavid Empire",1501,1736,"The Safavids made Shia Islam the state religion and enriched Persian art."),
+  era("iran","Qajar & Pahlavi",1789,1979,"Persia navigated foreign pressure, reform, and monarchy into the modern age."),
+  era("iran","Islamic Republic",1979,2025,"Revolution replaced the monarchy with an Islamic republic."),
+  era("egypt","Ottoman Egypt",1517,1805,"Egypt was a province of the Ottoman Empire, ruled through Mamluk elites."),
+  era("egypt","Muhammad Ali dynasty",1805,1952,"Reform and the Suez Canal drew Egypt into the modern world and British control."),
+  era("egypt","Republic of Egypt",1952,2025,"Nasser's revolution made Egypt a leader of the Arab world."),
+  era("ethiopia","Gondarine & imperial",1636,1974,"An ancient Christian empire preserved its independence against colonization."),
+  era("mali","Songhai Empire",1464,1591,"One of West Africa's largest empires flourished along the Niger."),
+  era("mali","Post-Songhai era",1591,1900,"After Songhai's fall, smaller states and trans-Saharan trade continued."),
+  era("southafrica","Cape Colony era",1652,1910,"Dutch then British settlement transformed the region through conquest."),
+  era("southafrica","Union & apartheid",1910,1994,"A unified state entrenched racial segregation under apartheid."),
+  era("southafrica","Democratic South Africa",1994,2025,"Mandela's election ended apartheid and began a democratic era."),
+  era("china","Ming dynasty",1368,1644,"A native Chinese dynasty of great fleets, porcelain, and the Forbidden City."),
+  era("china","Qing dynasty",1644,1912,"The Manchu Qing ruled a vast empire worn down by rebellion and foreign pressure."),
+  era("china","Republican era",1912,1949,"The fall of empire brought a fragile republic, warlords, invasion, and civil war."),
+  era("china","People's Republic",1949,2025,"Communist rule under Mao gave way to Deng's reforms and China's rise."),
+  era("japan","Warring States",1467,1603,"A century of civil war among rival warlords fragmented Japan."),
+  era("japan","Edo period",1603,1868,"The Tokugawa shoguns brought centuries of peace in near-total isolation."),
+  era("japan","Meiji era",1868,1912,"Japan transformed in a generation into an industrial power."),
+  era("japan","Modern Japan",1912,2025,"Militarism and war gave way to a democratic constitution and economic miracle."),
+  era("korea","Joseon dynasty",1392,1897,"A long Confucian dynasty gave Korea its alphabet and enduring institutions."),
+  era("korea","Colonial & divided Korea",1910,2025,"Japanese rule was followed by war and the division of the peninsula."),
+  era("india","Mughal Empire",1526,1757,"A wealthy, cosmopolitan empire unified much of the subcontinent."),
+  era("india","British India",1757,1947,"Company then Crown rule reshaped India and provoked a mass independence movement."),
+  era("india","Independent India",1947,2025,"Partition's trauma gave way to the world's largest democracy."),
+  era("indonesia","Colonial East Indies",1602,1945,"Dutch trading power hardened into a colonial state across the archipelago."),
+  era("indonesia","Independent Indonesia",1945,2025,"A vast, diverse republic emerged from Dutch rule."),
+  era("vietnam","Later Lê & Nguyễn",1428,1858,"Vietnamese dynasties ruled and expanded southward before French conquest."),
+  era("vietnam","French Indochina",1858,1945,"France ruled Vietnam as part of a colonial federation until WWII."),
+  era("vietnam","War & reunification",1945,1976,"Independence struggle and a long war ended in a reunified socialist republic."),
+  era("vietnam","Modern Vietnam",1976,2025,"Postwar reconstruction and market reforms transformed the country."),
+  era("nigeria","Pre-colonial states",1400,1861,"Powerful kingdoms and caliphates flourished across the region."),
+  era("nigeria","Colonial Nigeria",1861,1960,"British conquest and amalgamation created the colonial territory of Nigeria."),
+  era("nigeria","Independent Nigeria",1960,2025,"Africa's most populous nation navigated civil war, oil, and military rule toward democracy."),
+  era("australia","Colonial Australia",1788,1901,"British colonies grew on a continent long inhabited by Aboriginal peoples."),
+  era("australia","Federated Australia",1901,2025,"A unified nation navigated world wars and a reckoning with its past."),
+  era("canada","New France & British rule",1608,1867,"French then British colonies grew across a vast northern territory."),
+  era("canada","Dominion of Canada",1867,2025,"A self-governing dominion grew into an independent modern nation."),
+  era("brazil","Colonial Brazil",1500,1822,"Three centuries of Portuguese rule built on sugar, gold, and enslaved labour."),
+  era("brazil","Empire of Brazil",1822,1889,"Uniquely in the Americas, independent Brazil was a monarchy."),
+  era("brazil","Republic of Brazil",1889,2025,"From oligarchy through Vargas to modern democracy."),
+  era("mexico","New Spain",1521,1821,"Three centuries of Spanish colonial rule followed the Aztec conquest."),
+  era("mexico","Independent Mexico",1821,1910,"A turbulent century of independence, invasion, and internal strife."),
+  era("mexico","Modern Mexico",1910,2025,"Revolution reshaped the nation into a modern republic."),
+  era("peru","Inca Empire",1438,1533,"The largest empire in the pre-Columbian Americas, ruled from Cusco."),
+  era("peru","Viceroyalty of Peru",1533,1821,"A centre of Spanish colonial power and silver wealth in the Andes."),
+  era("peru","Republic of Peru",1821,2025,"Independence built a modern Andean nation atop deep Indigenous roots."),
+  era("argentina","Colonial & independence",1580,1861,"Spanish colonization gave way to independence and civil conflict."),
+  era("argentina","Modern Argentina",1861,2025,"A unified nation grew wealthy on the pampas, then navigated populism and crisis."),
+  era("aztec","Aztec Empire",1428,1521,"A powerful alliance ruled central Mexico from Tenochtitlan until the conquest."),
+  era("inca","Inca Empire",1438,1533,"A vast, sophisticated Andean empire linked by roads, ruled from Cusco."),
+  era("lakota","Plains life & treaties",1700,1868,"Horse-borne Plains nations flourished before treaties and settlers pressed in."),
+  era("lakota","Plains wars",1868,1890,"Determined armed resistance ended at Wounded Knee."),
+  era("lakota","Reservation era",1890,1934,"Confinement, land loss, and forced assimilation followed."),
+  era("aboriginal","Frontier era",1788,1900,"Colonization spread through dispossession and frontier violence."),
+  era("aboriginal","Protection & assimilation",1900,1967,"Intrusive state control included the Stolen Generations."),
+  era("aboriginal","Rights era",1967,2025,"Aboriginal movements won hard-fought gains in land rights and recognition."),
+];
+
+/* ---------------------------------------------------------------------------
+   SECOND WAVE
+   Additional events kept in their own array so the original timeline stays
+   readable. Pushed onto EVENTS below. Add future harvested batches the same way.
+--------------------------------------------------------------------------- */
+const EVENTS_EXTRA = [
+  // United States
+  ev("us",1620,"Mayflower lands","Separatist pilgrims found Plymouth Colony and sign the Mayflower Compact.",["expansion","religion"]),
+  ev("us",1692,"Salem witch trials","Mass hysteria in colonial Massachusetts sends twenty people to their deaths.",["society","religion"]),
+  ev("us",1754,"French and Indian War","The North American theatre of a global war reshapes the continent's colonial map.",["war","expansion"]),
+  ev("us",1812,"War of 1812","A second war with Britain ends in stalemate but hardens American national identity.",["war"]),
+  ev("us",1848,"California Gold Rush","Gold at Sutter's Mill draws hundreds of thousands west within a few years.",["economy","expansion"]),
+  ev("us",1886,"Statue of Liberty","France's gift is dedicated in New York Harbor as immigration surges.",["culture","society"]),
+  ev("us",1903,"First powered flight","The Wright brothers fly at Kitty Hawk, North Carolina.",["science"]),
+  ev("us",1917,"Enters WWI","American troops tip the balance on the Western Front.",["war"]),
+  ev("us",1941,"Pearl Harbor","Japan's surprise attack brings the United States into the Second World War.",["war"]),
+  ev("us",1954,"Brown v. Board of Education","The Supreme Court rules school segregation unconstitutional.",["society","politics"]),
+  ev("us",1974,"Nixon resigns","The Watergate scandal forces the first presidential resignation in US history.",["politics"]),
+  ev("us",2001,"September 11 attacks","Coordinated attacks kill nearly 3,000 people and reshape US foreign policy.",["war","politics"]),
+
+  // United Kingdom
+  ev("uk",1666,"Great Fire of London","Fire destroys much of the medieval city, clearing the way for a rebuilt London.",["society","infrastructure"]),
+  ev("uk",1801,"Union with Ireland","The United Kingdom of Great Britain and Ireland is created.",["politics"]),
+  ev("uk",1815,"Waterloo","Wellington and Blucher defeat Napoleon, ending the Napoleonic Wars.",["war"]),
+  ev("uk",1851,"The Great Exhibition","The Crystal Palace showcases industrial Britain at the height of its power.",["culture","science"]),
+  ev("uk",1859,"On the Origin of Species","Darwin publishes his theory of evolution by natural selection.",["science","society"]),
+  ev("uk",1928,"Equal franchise","Voting rights are extended to all women over 21, on the same terms as men.",["society","politics"]),
+  ev("uk",1953,"Structure of DNA","Watson and Crick, drawing on Franklin's data, describe the double helix in Cambridge.",["science"]),
+  ev("uk",1973,"Joins the EEC","Britain enters the European Economic Community.",["politics","economy"]),
+  ev("uk",2016,"Brexit referendum","A narrow vote to leave the European Union begins years of political upheaval.",["politics"]),
+
+  // Ireland
+  ev("ireland",1601,"Battle of Kinsale","Gaelic Ireland's defeat opens the way to English conquest and plantation.",["war","politics"]),
+  ev("ireland",1798,"United Irishmen rising","An republican rebellion inspired by France is crushed.",["war","politics"]),
+  ev("ireland",1998,"Good Friday Agreement","A peace settlement largely ends three decades of conflict in Northern Ireland.",["politics","society"]),
+
+  // France
+  ev("france",1685,"Edict of Nantes revoked","Louis XIV outlaws Protestantism; hundreds of thousands of Huguenots flee.",["religion","society"]),
+  ev("france",1871,"The Paris Commune","A radical municipal government holds Paris for two months before brutal suppression.",["politics","society"]),
+  ev("france",1894,"The Dreyfus Affair","A Jewish officer's wrongful conviction splits France and exposes deep antisemitism.",["politics","society"]),
+  ev("france",1940,"Fall of France","Germany overruns France in six weeks; the Vichy regime collaborates.",["war","politics"]),
+  ev("france",1968,"May 1968","Student protests and a general strike bring the country to a standstill.",["society","politics"]),
+
+  // Germany
+  ev("germany",1848,"Revolutions of 1848","Liberal uprisings sweep the German states before being suppressed.",["politics","society"]),
+  ev("germany",1895,"X-rays discovered","Wilhelm Rontgen's discovery in Wurzburg transforms medicine.",["science"]),
+  ev("germany",1936,"Berlin Olympics","The Nazi regime stages the Games as a propaganda showcase.",["politics","culture"]),
+  ev("germany",1961,"Berlin Wall built","East Germany seals off West Berlin overnight to stop the flow of refugees.",["politics"]),
+  ev("germany",1990,"Reunification","East and West Germany formally reunite less than a year after the Wall falls.",["politics"]),
+
+  // Italy
+  ev("italy",1527,"Sack of Rome","Mutinous imperial troops devastate the city, shocking Renaissance Europe.",["war","religion"]),
+  ev("italy",1600,"Giordano Bruno burned","The philosopher is executed in Rome for heresy over his cosmological ideas.",["religion","science"]),
+  ev("italy",1796,"Napoleon's Italian campaign","A young general's victories redraw the map of the peninsula.",["war"]),
+  ev("italy",1946,"Italy becomes a republic","A referendum abolishes the monarchy after the fall of fascism.",["politics"]),
+
+  // Spain
+  ev("spain",1605,"Don Quixote published","Cervantes publishes what many call the first modern novel.",["culture"]),
+  ev("spain",1898,"Loss of empire","Defeat by the United States costs Spain Cuba, Puerto Rico, and the Philippines.",["war","politics"]),
+  ev("spain",1975,"Franco dies","The dictator's death opens Spain's transition to democracy.",["politics","society"]),
+
+  // Netherlands
+  ev("netherlands",1672,"The Disaster Year","Invaded by France and England at once, the Republic survives by flooding its own land.",["war"]),
+  ev("netherlands",1795,"Batavian Republic","French revolutionary armies end the old Dutch Republic.",["politics","war"]),
+  ev("netherlands",1953,"North Sea flood","A catastrophic storm surge kills over 1,800 and prompts the Delta Works.",["society","infrastructure"]),
+
+  // Russia
+  ev("russia",1682,"Peter the Great","Peter I begins a reign that will drag Russia toward Europe by force.",["politics","science"]),
+  ev("russia",1905,"Revolution of 1905","Bloody Sunday and mass strikes force the Tsar to concede a parliament.",["politics","society"]),
+  ev("russia",1957,"Sputnik launched","The first artificial satellite opens the space age and alarms the West.",["science","politics"]),
+
+  // Poland
+  ev("poland",1683,"Relief of Vienna","Jan Sobieski's cavalry charge breaks the Ottoman siege of Vienna.",["war","religion"]),
+  ev("poland",1791,"Constitution of 3 May","Europe's first modern codified constitution is adopted, too late to save the state.",["politics"]),
+  ev("poland",1939,"Invaded from both sides","Germany and then the Soviet Union invade, starting WWII and erasing Poland again.",["war","politics"]),
+  ev("poland",1989,"Semi-free elections","Solidarity's landslide begins the unravelling of communism across Eastern Europe.",["politics"]),
+
+  // Greece
+  ev("greece",1687,"The Parthenon explodes","A Venetian shell ignites Ottoman gunpowder stored in the temple, wrecking it.",["war","culture"]),
+  ev("greece",1832,"Kingdom of Greece","The great powers recognize an independent Greek state.",["politics"]),
+  ev("greece",1940,"The Oxi resistance","Greece rejects an Italian ultimatum and repels the invasion before Germany intervenes.",["war"]),
+  ev("greece",1974,"Fall of the junta","Seven years of military dictatorship end and democracy is restored.",["politics"]),
+
+  // Turkey
+  ev("turkey",1529,"Siege of Vienna","Suleiman's army reaches the gates of Vienna, the empire's furthest push into Europe.",["war","expansion"]),
+  ev("turkey",1699,"Treaty of Karlowitz","The Ottomans cede large European territories, marking the start of retreat.",["politics","war"]),
+  ev("turkey",1908,"Young Turk Revolution","Reformist officers force the restoration of the constitution.",["politics"]),
+  ev("turkey",1915,"Gallipoli campaign","Ottoman forces repel a massive Allied landing in a costly defensive victory.",["war"]),
+
+  // Iran
+  ev("iran",1722,"Fall of Isfahan","An Afghan invasion topples the Safavid capital and shatters the empire.",["war","politics"]),
+  ev("iran",1908,"Oil discovered","The first major Middle Eastern oil strike draws in British interests.",["economy","science"]),
+  ev("iran",1953,"The 1953 coup","A British- and American-backed coup removes Prime Minister Mossadegh.",["politics"]),
+
+  // Egypt
+  ev("egypt",1922,"Tutankhamun's tomb","Howard Carter's discovery ignites worldwide fascination with ancient Egypt.",["culture","science"]),
+  ev("egypt",1956,"Suez Crisis","Nasser nationalizes the canal; a British, French, and Israeli intervention collapses.",["war","politics"]),
+  ev("egypt",2011,"Egyptian revolution","Mass protests in Tahrir Square end Hosni Mubarak's thirty-year rule.",["politics","society"]),
+
+  // Ethiopia
+  ev("ethiopia",1855,"Tewodros II crowned","A new emperor begins reunifying a fragmented Ethiopia.",["politics","war"]),
+  ev("ethiopia",1941,"Liberation","Allied and Ethiopian forces expel the Italians and restore Haile Selassie.",["war","politics"]),
+
+  // Mali / West Africa
+  ev("mali",1495,"Askia Muhammad's pilgrimage","The Songhai ruler's hajj to Mecca displays the empire's wealth and Islamic learning.",["religion","economy"]),
+
+  // South Africa
+  ev("southafrica",1795,"Britain takes the Cape","British occupation begins, displacing Dutch rule at a key sea route.",["war","expansion"]),
+  ev("southafrica",1836,"The Great Trek","Boer settlers move inland to escape British rule, colliding with African kingdoms.",["expansion","society"]),
+  ev("southafrica",1867,"Diamonds discovered","Finds near Kimberley transform the region's economy and draw mass migration.",["economy"]),
+  ev("southafrica",1886,"Gold on the Witwatersrand","The world's richest goldfield gives rise to Johannesburg.",["economy","infrastructure"]),
+  ev("southafrica",1899,"Second Boer War","Britain defeats the Boer republics in a brutal war marked by concentration camps.",["war"]),
+  ev("southafrica",1960,"Sharpeville massacre","Police kill 69 protesters, turning global opinion against apartheid.",["society","politics"]),
+  ev("southafrica",1976,"Soweto uprising","Student protests against Afrikaans instruction are met with lethal force.",["society","politics"]),
+  ev("southafrica",1990,"Mandela released","After 27 years in prison, Nelson Mandela walks free and negotiations begin.",["politics","society"]),
+
+  // China
+  ev("china",1793,"The Macartney mission","A British embassy seeking trade is rebuffed by the Qianlong Emperor.",["politics","economy"]),
+  ev("china",1900,"Boxer Rebellion","An anti-foreign uprising is crushed by an eight-nation alliance.",["war","religion"]),
+  ev("china",1934,"The Long March","Communist forces retreat 6,000 miles, and Mao emerges as their leader.",["war","politics"]),
+  ev("china",1966,"Cultural Revolution","Mao unleashes a decade of upheaval against perceived enemies within.",["politics","society"]),
+  ev("china",1989,"Tiananmen Square","Pro-democracy protests in Beijing end in a violent military crackdown.",["politics","society"]),
+
+  // Japan
+  ev("japan",1543,"Firearms arrive","Portuguese traders introduce the arquebus, transforming Japanese warfare.",["war","science"]),
+  ev("japan",1600,"Battle of Sekigahara","Tokugawa Ieyasu's victory clears the path to the shogunate.",["war","politics"]),
+  ev("japan",1637,"Shimabara Rebellion","A largely Christian revolt is crushed, hardening Japan's closure to the outside.",["religion","war"]),
+  ev("japan",1889,"Meiji Constitution","Japan adopts a written constitution and parliament on a Prussian model.",["politics"]),
+  ev("japan",1923,"Great Kanto earthquake","A catastrophic quake and fires destroy much of Tokyo and Yokohama.",["society"]),
+
+  // Korea
+  ev("korea",1876,"Treaty of Ganghwa","Japan forces Korea open to trade, beginning decades of foreign pressure.",["politics","economy"]),
+  ev("korea",1948,"Two Koreas declared","Separate governments are established in the north and south.",["politics"]),
+  ev("korea",1988,"Seoul Olympics","The Games showcase South Korea's transformation as democratization takes hold.",["culture","politics"]),
+
+  // India
+  ev("india",1600,"East India Company chartered","A London trading company receives a royal charter that will end in empire.",["economy","expansion"]),
+  ev("india",1739,"Nadir Shah sacks Delhi","A Persian invasion loots the Mughal capital, exposing the empire's collapse.",["war"]),
+  ev("india",1885,"Indian National Congress","The organization that will lead the independence movement is founded.",["politics"]),
+  ev("india",1919,"Amritsar massacre","British troops fire on an unarmed crowd, killing hundreds and galvanizing nationalism.",["war","society"]),
+  ev("india",1971,"Bangladesh war","India intervenes in East Pakistan's independence struggle, creating Bangladesh.",["war","politics"]),
+
+  // Indonesia
+  ev("indonesia",1740,"Batavia massacre","Dutch colonists and troops kill thousands of ethnic Chinese residents.",["society","war"]),
+  ev("indonesia",1965,"Coup and mass killings","An attempted coup triggers anti-communist purges that kill hundreds of thousands.",["politics","war"]),
+  ev("indonesia",1998,"Suharto falls","Economic crisis and protests end three decades of authoritarian rule.",["politics","economy"]),
+
+  // Vietnam
+  ev("vietnam",1471,"Conquest of Champa","Dai Viet's victory begins a long southward expansion down the coast.",["war","expansion"]),
+  ev("vietnam",1968,"Tet Offensive","A coordinated surprise offensive shifts American opinion against the war.",["war","politics"]),
+  ev("vietnam",1986,"Doi Moi reforms","Market-oriented reforms begin Vietnam's economic transformation.",["economy","politics"]),
+
+  // Nigeria / West Africa
+  ev("nigeria",1861,"Lagos annexed","Britain seizes Lagos, its first foothold in what becomes Nigeria.",["expansion","war"]),
+  ev("nigeria",1999,"Return to civilian rule","After sixteen years of military government, Nigeria returns to democracy.",["politics"]),
+
+  // Brazil
+  ev("brazil",1695,"Gold in Minas Gerais","A massive gold strike shifts Brazil's centre of gravity and swells slavery.",["economy","expansion"]),
+  ev("brazil",1930,"Vargas takes power","Getulio Vargas seizes power and begins modernizing the Brazilian state.",["politics","economy"]),
+  ev("brazil",1985,"Democracy restored","Twenty-one years of military dictatorship come to an end.",["politics"]),
+
+  // Mexico
+  ev("mexico",1531,"Our Lady of Guadalupe","The reported apparition becomes central to Mexican Catholic identity.",["religion","culture"]),
+  ev("mexico",1862,"French intervention","Mexican forces win at Puebla before France installs Emperor Maximilian.",["war","politics"]),
+  ev("mexico",1968,"Tlatelolco massacre","Government forces kill student protesters days before the Mexico City Olympics.",["politics","society"]),
+
+  // Peru / Andes
+  ev("peru",1572,"Execution of Tupac Amaru","The last Inca ruler of Vilcabamba is executed, ending Inca resistance.",["war","politics"]),
+  ev("peru",1746,"Lima earthquake","A devastating quake and tsunami destroy Lima and the port of Callao.",["society"]),
+  ev("peru",1824,"Battle of Ayacucho","The decisive victory ends Spanish rule in South America.",["war","politics"]),
+
+  // Argentina
+  ev("argentina",1580,"Buenos Aires refounded","The permanent settlement is established on the Rio de la Plata.",["expansion"]),
+  ev("argentina",1853,"National constitution","A federal constitution begins to knit the provinces into a nation.",["politics"]),
+  ev("argentina",1982,"Falklands War","Defeat in the South Atlantic hastens the collapse of the military junta.",["war","politics"]),
+
+  // Australia
+  ev("australia",1851,"Australian gold rushes","Gold discoveries triple the colonial population within a decade.",["economy","expansion"]),
+  ev("australia",1915,"Gallipoli","Heavy losses in the Dardanelles become central to Australian national memory.",["war","society"]),
+  ev("australia",1967,"1967 referendum","Australians vote overwhelmingly to count Aboriginal people in the census.",["politics","society"]),
+  ev("australia",2008,"National Apology","The prime minister formally apologizes to the Stolen Generations.",["politics","society"]),
+
+  // Canada
+  ev("canada",1670,"Hudson's Bay Company","A royal charter grants a vast fur-trading territory across the north.",["economy","expansion"]),
+  ev("canada",1812,"War of 1812","American invasions are repelled, shaping a distinct Canadian identity.",["war"]),
+  ev("canada",1885,"Canadian Pacific Railway","A transcontinental line is completed, binding the young dominion together.",["infrastructure","economy"]),
+  ev("canada",1917,"Vimy Ridge","Canadian troops take the ridge in a battle long seen as a national coming of age.",["war"]),
+  ev("canada",1982,"Constitution patriated","Canada gains full control of its constitution and adopts a Charter of Rights.",["politics"]),
+
+  // Lakota & the Plains Nations
+  ev("lakota",1823,"Arikara War","The first US military campaign against Plains nations signals what is coming.",["war"]),
+  ev("lakota",1874,"Gold in the Black Hills","Custer's expedition confirms gold in sacred Lakota territory, shattering the treaty.",["expansion","economy"]),
+
+  // Aztec & Mesoamerica
+  ev("aztec",1440,"Motecuhzoma I","Under a new ruler the Aztec state expands across central Mexico.",["politics","expansion"]),
+  ev("aztec",1502,"Motecuhzoma II","The empire reaches its greatest extent under its last undisputed ruler.",["politics"]),
+
+  // Inca Empire
+  ev("inca",1471,"Topa Inca expands the empire","Conquests stretch Inca rule far along the Andes.",["expansion","politics"]),
+  ev("inca",1527,"Smallpox and civil war","Disease arriving ahead of the Spanish kills the emperor and splits the empire.",["society","war"]),
+
+  // Aboriginal Australia
+  ev("aboriginal",1789,"Smallpox epidemic","An epidemic devastates Aboriginal communities around Sydney within a year of settlement.",["society"]),
+  ev("aboriginal",1901,"Excluded from the nation","Federation explicitly excludes Aboriginal people from the new Commonwealth's counts.",["politics","society"]),
+  ev("aboriginal",2008,"National Apology","The Commonwealth apologizes for the forced removal of Aboriginal children.",["politics","society"]),
+];
+EVENTS.push(...EVENTS_EXTRA);
+
+/* ---------------------------------------------------------------------------
+   ANTIQUITY & THE MIDDLE AGES  (c. 800 BCE – 1400 CE)
+   Negative years are BCE. There is no year zero, so -1 is followed by 1.
+   Coverage thins the further back you go — that is a property of the record,
+   not an oversight. The adaptive year window (see windowFor) compensates.
+--------------------------------------------------------------------------- */
+const EVENTS_ANCIENT = [
+  // ---- Greece
+  ev("greece",-776,"First Olympic Games","The traditional date for the first games at Olympia, held in honour of Zeus.",["sport","religion","culture"]),
+  ev("greece",-508,"Athenian democracy","Cleisthenes' reforms give ordinary Athenian citizens direct power over the state.",["politics","revolution"]),
+  ev("greece",-490,"Battle of Marathon","Outnumbered Athenians defeat a Persian invasion force on the plain of Marathon.",["war"]),
+  ev("greece",-480,"Thermopylae and Salamis","A Spartan stand and an Athenian naval victory halt Xerxes' invasion of Greece.",["war"]),
+  ev("greece",-447,"The Parthenon begun","Athens builds its great temple to Athena at the height of its imperial confidence.",["culture","religion"]),
+  ev("greece",-431,"Peloponnesian War","Athens and Sparta begin a 27-year war that exhausts the Greek world.",["war","politics"]),
+  ev("greece",-399,"Death of Socrates","Athens executes its most famous philosopher on charges of impiety and corrupting the young.",["culture","politics"]),
+  ev("greece",-336,"Alexander takes the throne","At twenty, Alexander inherits Macedon and prepares to invade Persia.",["leader","war"]),
+  ev("greece",-323,"Death of Alexander","Alexander dies at Babylon at 32; his generals carve the empire into rival kingdoms.",["leader","war"]),
+  ev("greece",-300,"The Library of Alexandria","Greek Egypt assembles the ancient world's greatest collection of scrolls.",["culture","science"]),
+  ev("greece",-146,"Rome conquers Greece","The sack of Corinth ends Greek independence and absorbs it into Rome.",["war","politics"]),
+  ev("greece",393,"Ancient Olympics abolished","A Christian emperor suppresses the games after more than a millennium.",["sport","religion"]),
+  ev("greece",1054,"The Great Schism","Latin and Greek Christianity formally break apart over doctrine and authority.",["religion","politics"]),
+
+  // ---- Rome / Italy
+  ev("italy",-753,"Rome founded","The traditional date for the founding of the city on the Tiber.",["politics","culture"]),
+  ev("italy",-509,"The Roman Republic","Rome expels its last king and establishes a republic of consuls and senate.",["politics","revolution"]),
+  ev("italy",-264,"First Punic War","Rome and Carthage begin a century-long contest for the western Mediterranean.",["war"]),
+  ev("italy",-218,"Hannibal crosses the Alps","A Carthaginian army with elephants invades Italy and nearly destroys Rome.",["war"]),
+  ev("italy",-146,"Carthage destroyed","Rome razes its great rival and becomes the Mediterranean's dominant power.",["war","expansion"]),
+  ev("italy",-44,"Caesar assassinated","Senators kill Julius Caesar on the Ides of March, triggering a final civil war.",["politics","leader"]),
+  ev("italy",-27,"Augustus and the empire","Octavian becomes Augustus, ending the republic and beginning two centuries of imperial peace.",["leader","politics"]),
+  ev("italy",79,"Vesuvius erupts","The eruption buries Pompeii and Herculaneum, preserving them in extraordinary detail.",["disaster","society"]),
+  ev("italy",80,"The Colosseum opens","Rome inaugurates its great amphitheatre with a hundred days of games.",["culture","infrastructure","sport"]),
+  ev("italy",313,"Edict of Milan","Constantine legalizes Christianity across the Roman Empire.",["religion","politics"]),
+  ev("italy",410,"Rome sacked","Visigoths under Alaric take the city, unthinkable to contemporaries.",["war"]),
+  ev("italy",476,"Fall of the Western Empire","The last western emperor is deposed, a conventional end date for antiquity.",["politics","war"]),
+  ev("italy",1088,"University of Bologna","Europe's oldest university takes shape around the study of law.",["culture","science"]),
+  ev("italy",1308,"Dante begins the Comedy","Dante starts the poem that will help make Italian a literary language.",["culture"]),
+  ev("italy",1347,"The Black Death arrives","Plague reaches Sicily by ship and begins killing perhaps a third of Europe.",["disaster","society"]),
+
+  // ---- Mesopotamia / Iraq
+  ev("iraq",-700,"The Assyrian Empire","Assyria rules the Near East from Nineveh with unmatched military organization.",["expansion","war"]),
+  ev("iraq",-612,"Nineveh falls","A Babylonian and Median coalition destroys the Assyrian capital.",["war","politics"]),
+  ev("iraq",-605,"Neo-Babylonian Empire","Nebuchadnezzar II rebuilds Babylon into the ancient world's greatest city.",["leader","infrastructure"]),
+  ev("iraq",-539,"Cyrus takes Babylon","Persia absorbs Babylon; Cyrus permits exiled peoples to return home.",["war","leader"]),
+  ev("iraq",762,"Baghdad founded","The Abbasid caliphs build a new round city that becomes the world's largest.",["infrastructure","politics"]),
+  ev("iraq",830,"The House of Wisdom","Baghdad's scholars translate and extend Greek, Persian, and Indian learning.",["science","culture"]),
+  ev("iraq",1258,"Mongols sack Baghdad","The Abbasid caliphate is destroyed and the city's libraries burned.",["war","disaster"]),
+
+  // ---- Persia / Iran
+  ev("iran",-550,"Cyrus founds Persia","Cyrus the Great unites the Medes and Persians into the Achaemenid Empire.",["leader","expansion"]),
+  ev("iran",-486,"Xerxes inherits an empire","The Achaemenid realm stretches from the Aegean to the Indus.",["leader","expansion"]),
+  ev("iran",-330,"Persepolis burns","Alexander destroys the Persian ceremonial capital, ending Achaemenid rule.",["war"]),
+  ev("iran",224,"The Sasanian Empire","A new Persian dynasty rises and will contest the Near East with Rome for four centuries.",["politics","war"]),
+  ev("iran",651,"Arab conquest of Persia","The Sasanian Empire falls and Islam spreads across the Iranian plateau.",["war","religion"]),
+  ev("iran",1010,"The Shahnameh completed","Ferdowsi finishes the Persian national epic, preserving pre-Islamic memory.",["culture"]),
+  ev("iran",1219,"Mongol invasion","Genghis Khan's armies devastate the cities of Persia and Central Asia.",["war","disaster"]),
+
+  // ---- Egypt
+  ev("egypt",-671,"Assyrian conquest","Assyria invades and briefly rules Egypt.",["war"]),
+  ev("egypt",-525,"Persian conquest","Cambyses II defeats the last native pharaoh and makes Egypt a Persian province.",["war","politics"]),
+  ev("egypt",-332,"Alexander in Egypt","Alexander is welcomed as a liberator and founds Alexandria on the coast.",["leader","expansion"]),
+  ev("egypt",-196,"The Rosetta Stone","A trilingual decree is carved that will one day unlock hieroglyphics.",["culture","science"]),
+  ev("egypt",-30,"Death of Cleopatra","The last Ptolemaic ruler dies and Egypt becomes a Roman province.",["leader","politics"]),
+  ev("egypt",641,"Arab conquest","Muslim armies take Egypt, beginning its long Arabic and Islamic era.",["war","religion"]),
+  ev("egypt",969,"Cairo founded","The Fatimids establish a new capital that becomes a centre of learning.",["infrastructure","religion"]),
+  ev("egypt",1250,"Mamluk sultanate","A dynasty of soldier-slaves seizes power and will halt the Mongols.",["politics","war"]),
+
+  // ---- Anatolia / Byzantium / Turkey
+  ev("turkey",330,"Constantinople founded","Constantine dedicates a new eastern capital on the Bosphorus.",["infrastructure","politics"]),
+  ev("turkey",537,"Hagia Sophia completed","Justinian's cathedral is the largest enclosed space in the world for centuries.",["religion","infrastructure"]),
+  ev("turkey",1071,"Battle of Manzikert","Seljuk Turks defeat Byzantium and open Anatolia to Turkish settlement.",["war","expansion"]),
+  ev("turkey",1204,"Fourth Crusade sacks Constantinople","Crusaders loot the Christian capital they had set out to aid.",["war","religion"]),
+  ev("turkey",1299,"The Ottoman state","Osman founds the dynasty that will rule for six centuries.",["politics","expansion"]),
+
+  // ---- China
+  ev("china",-551,"Confucius born","The teacher whose ethics will shape East Asian statecraft for millennia.",["culture","religion"]),
+  ev("china",-221,"Qin unifies China","Qin Shi Huang unites the warring states and standardizes script, weights, and roads.",["leader","politics"]),
+  ev("china",-206,"The Han dynasty","Four centuries of Han rule establish the enduring template of Chinese empire.",["politics","culture"]),
+  ev("china",-130,"The Silk Road opens","Han diplomacy and trade link China to Central Asia and, indirectly, Rome.",["economy","expansion"]),
+  ev("china",105,"Paper invented","Cai Lun's process makes a cheap, durable writing surface.",["science","culture"]),
+  ev("china",618,"The Tang dynasty","A cosmopolitan golden age of poetry, trade, and Buddhist scholarship begins.",["culture","politics"]),
+  ev("china",868,"The first printed book","The Diamond Sutra is printed, the oldest dated printed book to survive.",["science","religion"]),
+  ev("china",960,"The Song dynasty","An era of commerce, gunpowder, printing, and the compass.",["science","economy"]),
+  ev("china",1279,"Mongol conquest complete","Kublai Khan's Yuan dynasty rules all of China for the first time under foreign rule.",["war","politics"]),
+  ev("china",1368,"The Ming dynasty","A peasant rebellion expels the Mongols and founds a native dynasty.",["revolution","politics"]),
+
+  // ---- India
+  ev("india",-563,"The Buddha","Siddhartha Gautama is born; his teaching will spread across Asia.",["religion","culture"]),
+  ev("india",-321,"The Mauryan Empire","Chandragupta founds the first empire to unite most of the subcontinent.",["leader","expansion"]),
+  ev("india",-268,"Ashoka's conversion","After a devastating war, Ashoka embraces Buddhism and inscribes edicts on pillars.",["leader","religion"]),
+  ev("india",320,"The Gupta Empire","A classical age of mathematics, astronomy, literature, and temple art.",["culture","science"]),
+  ev("india",499,"Aryabhata's astronomy","The mathematician sets out place-value arithmetic and a heliocentric hint.",["science"]),
+  ev("india",1192,"Delhi Sultanate","Muslim rule is established in northern India after the second battle of Tarain.",["war","religion"]),
+
+  // ---- Japan
+  ev("japan",538,"Buddhism arrives","Buddhist teaching reaches Japan from Korea and reshapes its culture.",["religion","culture"]),
+  ev("japan",710,"Nara becomes capital","Japan builds its first permanent capital on a Chinese model.",["infrastructure","politics"]),
+  ev("japan",794,"The Heian period","The court moves to Kyoto for four centuries of refined aristocratic culture.",["culture","politics"]),
+  ev("japan",1008,"The Tale of Genji","Murasaki Shikibu writes what many consider the world's first novel.",["culture"]),
+  ev("japan",1185,"The Kamakura shogunate","Military rule under a shogun displaces the imperial court's power.",["politics","war"]),
+  ev("japan",1274,"Mongol invasions repelled","Storms and defenders turn back two Mongol fleets, remembered as the kamikaze.",["war","disaster"]),
+
+  // ---- Korea
+  ev("korea",668,"Silla unifies Korea","The peninsula is unified under the kingdom of Silla.",["politics","war"]),
+  ev("korea",918,"The Goryeo dynasty","A new dynasty gives Korea its Western name and a Buddhist golden age.",["politics","religion"]),
+  ev("korea",1234,"Metal movable type","Korean printers cast metal type, two centuries before Gutenberg.",["science","culture"]),
+
+  // ---- Mongolia
+  ev("mongolia",1206,"Genghis Khan proclaimed","Temujin unites the Mongol tribes and takes the title Genghis Khan.",["leader","war"]),
+  ev("mongolia",1227,"Death of Genghis Khan","He leaves the largest contiguous land empire yet assembled.",["leader","war"]),
+  ev("mongolia",1241,"Mongols reach Europe","Armies devastate Hungary and Poland before withdrawing on the Great Khan's death.",["war","expansion"]),
+  ev("mongolia",1260,"Kublai Khan","The empire splits into khanates as Kublai turns toward China.",["leader","politics"]),
+
+  // ---- Britain
+  ev("uk",43,"Roman conquest of Britain","Claudius invades and Britain becomes a Roman province for four centuries.",["war","expansion"]),
+  ev("uk",122,"Hadrian's Wall","Rome fortifies its northern frontier across the island.",["infrastructure","war"]),
+  ev("uk",597,"Augustine's mission","Christianity is reintroduced to Anglo-Saxon England from Rome.",["religion"]),
+  ev("uk",793,"Lindisfarne raided","A Viking attack on the island monastery opens the Norse age in Britain.",["war","religion"]),
+  ev("uk",1066,"The Norman Conquest","William of Normandy defeats Harold at Hastings and remakes English society.",["war","leader"]),
+  ev("uk",1215,"Magna Carta","Rebel barons force King John to accept limits on royal power.",["politics","revolution"]),
+  ev("uk",1348,"The Black Death in England","Plague kills perhaps half the population within two years.",["disaster","society"]),
+  ev("uk",1381,"The Peasants' Revolt","Rebels march on London demanding an end to serfdom.",["revolution","society"]),
+
+  // ---- France
+  ev("france",507,"Clovis unites the Franks","The Frankish king converts to Catholicism and founds a lasting kingdom.",["leader","religion"]),
+  ev("france",732,"Battle of Tours","Charles Martel halts an Umayyad advance into Frankish territory.",["war","religion"]),
+  ev("france",800,"Charlemagne crowned emperor","The pope crowns Charlemagne in Rome, reviving an imperial title in the west.",["leader","religion"]),
+  ev("france",1096,"The First Crusade","Preached at Clermont, the crusade sets out to seize Jerusalem.",["religion","war"]),
+  ev("france",1163,"Notre-Dame begun","Paris starts the cathedral that will define Gothic architecture.",["culture","religion"]),
+  ev("france",1337,"Hundred Years' War","A dynastic dispute begins more than a century of intermittent war with England.",["war","politics"]),
+
+  // ---- Germany & Central Europe
+  ev("germany",9,"Teutoburg Forest","Germanic tribes annihilate three Roman legions, fixing Rome's frontier at the Rhine.",["war"]),
+  ev("germany",962,"The Holy Roman Empire","Otto I is crowned emperor, founding a realm that lasts until 1806.",["leader","politics"]),
+  ev("germany",1241,"The Hanseatic League","North German towns form a trading confederation that dominates the Baltic.",["economy","politics"]),
+
+  // ---- Spain & al-Andalus
+  ev("spain",711,"Umayyad conquest","Muslim armies cross from North Africa and take most of the peninsula within years.",["war","religion"]),
+  ev("spain",785,"Great Mosque of Cordoba","Cordoba becomes one of Europe's largest and most learned cities.",["religion","culture"]),
+  ev("spain",1085,"Toledo recaptured","A major Christian advance opens Arabic scholarship to Latin translators.",["war","science"]),
+  ev("spain",1212,"Las Navas de Tolosa","A combined Christian victory breaks Almohad power in Iberia.",["war","religion"]),
+
+  // ---- Russia & the Slavic world
+  ev("russia",862,"Rurik and the Rus","Norse traders and rulers establish the polity that becomes Kievan Rus.",["politics","expansion"]),
+  ev("russia",988,"Christianization of Rus","Vladimir adopts Byzantine Christianity, orienting Rus toward Constantinople.",["religion","leader"]),
+  ev("russia",1240,"Mongol conquest","Kyiv falls and the Rus principalities pay tribute for over two centuries.",["war","politics"]),
+  ev("russia",1380,"Battle of Kulikovo","Moscow's first major victory over the Golden Horde becomes a founding legend.",["war","revolution"]),
+
+  // ---- Poland
+  ev("poland",966,"Baptism of Poland","Mieszko I converts, bringing the Polish state into Latin Christendom.",["religion","leader"]),
+
+  // ---- Ethiopia & Africa
+  ev("ethiopia",330,"Aksum adopts Christianity","The kingdom of Aksum becomes one of the world's first Christian states.",["religion","politics"]),
+  ev("ethiopia",1200,"The rock churches of Lalibela","Eleven churches are hewn downward out of solid rock.",["religion","culture","infrastructure"]),
+  ev("ethiopia",1270,"The Solomonic dynasty","A new dynasty claims descent from Solomon and rules into the twentieth century.",["politics","religion"]),
+  ev("mali",1235,"The Mali Empire","Sundiata Keita defeats Sosso and founds an empire on the Niger.",["leader","expansion"]),
+  ev("mali",1324,"Mansa Musa's pilgrimage","The emperor's hajj distributes so much gold it disrupts Mediterranean prices.",["economy","religion"]),
+  ev("nigeria",1000,"The Ife bronzes","Ife artists produce naturalistic brass heads of extraordinary skill.",["culture"]),
+  ev("nigeria",1180,"The Kingdom of Benin","A powerful forest kingdom rises with a walled capital and royal guild artists.",["politics","culture"]),
+  ev("southafrica",1100,"Mapungubwe","A gold-trading kingdom flourishes on the Limpopo, linked to the Indian Ocean.",["economy","politics"]),
+
+  // ---- The Americas
+  ev("maya",250,"The Classic Maya","City-states across the lowlands build pyramids and refine writing and astronomy.",["culture","science"]),
+  ev("maya",683,"Pakal's tomb at Palenque","The great king is buried beneath a temple in a richly inscribed sarcophagus.",["leader","culture"]),
+  ev("maya",900,"The Classic collapse","Southern lowland cities are abandoned amid drought, war, and political failure.",["disaster","society"]),
+  ev("maya",1200,"Chichen Itza","A northern Yucatan city becomes the region's dominant centre.",["infrastructure","politics"]),
+  ev("mexico",100,"Teotihuacan rises","One of the ancient world's largest cities grows in the Valley of Mexico.",["infrastructure","culture"]),
+  ev("mexico",750,"Teotihuacan burns","The great city's centre is destroyed and the population disperses.",["disaster","war"]),
+  ev("mexico",950,"The Toltecs at Tula","A militarized state emerges that later Aztecs will claim as ancestors.",["politics","culture"]),
+  ev("peru",600,"The Wari and Tiwanaku","Two Andean states build road networks and terraced agriculture at altitude.",["infrastructure","politics"]),
+  ev("peru",1200,"Cusco founded","The settlement that will become the Inca capital is established.",["politics","infrastructure"]),
+  ev("lakota",1000,"Cahokia","North America's largest pre-Columbian city rises on the Mississippi.",["infrastructure","society"]),
+
+  // ---- Southeast Asia
+  ev("vietnam",939,"Independence from China","Ngo Quyen's victory on the Bach Dang ends a thousand years of Chinese rule.",["war","revolution"]),
+  ev("indonesia",800,"Borobudur built","The world's largest Buddhist temple is raised in central Java.",["religion","infrastructure"]),
+  ev("indonesia",1293,"Majapahit founded","A Javanese maritime empire comes to dominate the archipelago.",["politics","expansion"]),
+];
+EVENTS.push(...EVENTS_ANCIENT);
+
+/* Modern additions for the new tag categories -------------------------------- */
+const EVENTS_TAGGED = [
+  ev("uk",1863,"Football Association founded","London clubs agree a single code, creating modern association football.",["sport","culture"]),
+  ev("brazil",1950,"World Cup at the Maracana","Brazil hosts the tournament and loses the deciding match to Uruguay at home.",["sport","society"]),
+  ev("australia",2000,"Sydney Olympics","Cathy Freeman's victory becomes a moment of national reconciliation.",["sport","society"]),
+  ev("china",2008,"Beijing Olympics","China stages an elaborate Games announcing its arrival as a global power.",["sport","politics"]),
+  ev("us",1789,"Washington inaugurated","The first US president takes office under the new constitution.",["leader","politics"]),
+  ev("us",1860,"Lincoln elected","His election on an anti-slavery-expansion platform triggers secession.",["leader","politics"]),
+  ev("us",2008,"Obama elected","The United States elects its first Black president.",["leader","politics"]),
+  ev("uk",1979,"Thatcher elected","Britain's first woman prime minister begins a decade of radical economic change.",["leader","economy"]),
+  ev("india",1966,"Indira Gandhi elected","India's first woman prime minister takes office.",["leader","politics"]),
+  ev("brazil",2002,"Lula elected","A former union leader wins the presidency and expands social programmes.",["leader","society"]),
+  ev("germany",2005,"Merkel becomes chancellor","Germany's first woman chancellor begins sixteen years in office.",["leader","politics"]),
+];
+EVENTS.push(...EVENTS_TAGGED);
+
+/* Automatic retagging --------------------------------------------------------
+   Applies the new categories to events already in the set, by keyword. Rules
+   are deliberately narrow — a wrong tag is worse than a missing one. */
+const RETAG=[
+  [/revolution|uprising|rebellion|revolt|rising\b|independence declared/i,"revolution"],
+  [/olympic|world cup|football association|games\b/i,"sport"],
+  [/elected|inaugurat|crowned|proclaimed|takes power|becomes chancellor|becomes a republic/i,"leader"],
+  [/earthquake|flood|fire\b|famine|plague|epidemic|erupt|massacre|disaster|black death|tsunami/i,"disaster"],
+];
+EVENTS.forEach(e=>{
+  const hay=`${e.title} ${e.blurb}`;
+  RETAG.forEach(([re,tag])=>{ if(re.test(hay) && !e.tags.includes(tag)) e.tags.push(tag); });
+});
+
+/* ---------------------------------------------------------------------------
+   ENRICHMENT LAYER
+   Deep-dive content kept separate from the compact EVENTS list so it can grow
+   without bloating the base timeline. Keyed by event id. Each entry may carry:
+     detail  — a fuller narrative paragraph (2–4 sentences)
+     why     — "why it mattered", one crisp sentence of significance
+     images  — extra figures via img("File.jpg","caption")
+     source  — a real, checkable citation replacing the placeholder
+   Merged onto matching events at load. Unmatched events keep their one-liner.
+--------------------------------------------------------------------------- */
+const ENRICH = {
+  "us-1776-declaration-of-independence":{
+    detail:"Drafted chiefly by Thomas Jefferson and adopted by the Second Continental Congress in Philadelphia, the Declaration recast a tax dispute as a claim about universal rights and the consent of the governed. It did not end the war — that took until 1783 — but it made reconciliation with Britain impossible and gave the revolution a founding text.",
+    why:"It turned thirteen quarrelling colonies into a single cause and supplied language reused by independence and rights movements ever since.",
+    source:"National Archives, 'Declaration of Independence: A Transcription' (archives.gov)."
+  },
+  "us-1863-emancipation-proclamation":{
+    detail:"Issued as a war measure on January 1, 1863, Lincoln's proclamation declared free the enslaved people in Confederate-held territory — areas the Union did not yet control. Its practical reach depended on advancing Union armies, but it changed the war's purpose and opened the army to Black soldiers, nearly 200,000 of whom served.",
+    why:"It bound the Union cause to abolition and set the stage for the Thirteenth Amendment's permanent ban on slavery in 1865.",
+    source:"Foner, 'The Fiery Trial: Abraham Lincoln and American Slavery' (2010); National Archives."
+  },
+  "us-1869-transcontinental-railroad":{
+    detail:"When the Central Pacific and Union Pacific met at Promontory Summit, a journey that had taken months by wagon collapsed to about a week. The line was built largely by Chinese and Irish labour under brutal conditions, and it accelerated the settlement of the West at devastating cost to Plains nations.",
+    why:"It knit a continental market together and remade the American economy — while hastening the dispossession of Indigenous peoples.",
+    source:"Bain, 'Empire Express: Building the First Transcontinental Railroad' (1999)."
+  },
+  "us-1969-apollo-11-moon-landing":{
+    detail:"Apollo 11 capped a decade-long effort begun after Kennedy's 1961 pledge, drawing on the work of some 400,000 people. Armstrong and Aldrin spent about 21 hours on the surface while Michael Collins orbited above; an estimated 600 million people watched or listened live.",
+    why:"It was the first time humans set foot on another world — a Cold War contest that became a shared milestone for the species.",
+    images:[img("Apollo_11_Crew.jpg","The Apollo 11 crew: Armstrong, Collins, Aldrin (NASA / Wikimedia Commons)")],
+    source:"NASA, 'Apollo 11 Mission Overview' (nasa.gov); Chaikin, 'A Man on the Moon' (1994)."
+  },
+  "russia-1917-bolshevik-revolution":{
+    detail:"With Russia exhausted by war and the Provisional Government faltering, Lenin's Bolsheviks seized key points in Petrograd in October 1917 (November by the modern calendar). A brutal civil war followed until 1922 before their control was secure.",
+    why:"It created the world's first avowedly communist state and defined much of the twentieth century's ideological divide.",
+    source:"Figes, 'A People's Tragedy: The Russian Revolution 1891–1924' (1996)."
+  },
+  "france-1789-french-revolution-begins":{
+    detail:"The storming of the Bastille on July 14, 1789 was as much symbol as strategy — the fortress held only a handful of prisoners — but it signalled that royal authority had broken. Within months the National Assembly abolished feudal privileges and issued the Declaration of the Rights of Man.",
+    why:"It ended absolute monarchy in France and spread the vocabulary of citizenship and rights across Europe.",
+    source:"Doyle, 'The Oxford History of the French Revolution' (2nd ed., 2002)."
+  },
+  "germany-1517-luther-s-95-theses":{
+    detail:"Luther's objections to the sale of indulgences, circulated in late 1517, were rapidly printed and spread across the German lands. What began as a scholarly challenge became, within a few years, an open break with Rome that neither pope nor emperor could contain.",
+    why:"It shattered the religious unity of western Europe and launched the Protestant Reformation.",
+    source:"MacCulloch, 'The Reformation: A History' (2003)."
+  },
+  "germany-1989-fall-of-the-berlin-wall":{
+    detail:"A muddled announcement by an East German official on November 9, 1989 sent crowds to the checkpoints; overwhelmed guards opened the gates. The wall's fall came amid a wave of peaceful revolutions across the Eastern Bloc and led to German reunification within a year.",
+    why:"It marked the effective end of the Cold War division of Europe.",
+    source:"Sarotte, 'The Collapse: The Accidental Opening of the Berlin Wall' (2014)."
+  },
+  "china-1405-zheng-he-s-voyages":{
+    detail:"Between 1405 and 1433 the admiral Zheng He led seven vast expeditions across the Indian Ocean, reaching Arabia and East Africa with fleets of hundreds of ships far larger than anything Europe would launch for a century. The voyages projected Ming prestige and tribute ties before being abruptly abandoned.",
+    why:"They show a Chinese maritime reach that could have reshaped global trade — and a deliberate turn inward that ceded the oceans to others.",
+    source:"Dreyer, 'Zheng He: China and the Oceans in the Early Ming Dynasty' (2007)."
+  },
+  "china-1839-first-opium-war":{
+    detail:"When Qing officials moved to stamp out the illegal British opium trade, Britain responded with force, and its steam-powered navy overwhelmed Chinese defences. The 1842 Treaty of Nanjing ceded Hong Kong and opened treaty ports on humiliating terms.",
+    why:"It opened the 'century of humiliation' and the forced opening of China to foreign powers.",
+    source:"Lovell, 'The Opium War: Drugs, Dreams and the Making of China' (2011)."
+  },
+  "japan-1868-meiji-restoration":{
+    detail:"A coalition of reformers restored the emperor to nominal power and dismantled the samurai order, then sent missions abroad to study Western industry, law, and armies. Within a generation Japan built railways, a constitution, and a modern military.",
+    why:"It made Japan the first non-Western nation to industrialize rapidly and rank among the great powers.",
+    source:"Jansen, 'The Making of Modern Japan' (2000)."
+  },
+  "india-1947-independence-partition":{
+    detail:"At midnight on August 15, 1947 British India became independent as two states, India and Pakistan. Partition triggered one of history's largest migrations — some 15 million people — and communal violence that killed hundreds of thousands.",
+    why:"It ended nearly two centuries of British rule and drew borders whose consequences still shape South Asia.",
+    source:"Khan, 'The Great Partition: The Making of India and Pakistan' (2007)."
+  },
+  "india-1632-taj-mahal-begun":{
+    detail:"Shah Jahan commissioned the white-marble mausoleum for his wife Mumtaz Mahal; it took some two decades and tens of thousands of workers to complete. Its perfect symmetry and inlaid stone mark the height of Mughal architecture.",
+    why:"It remains the enduring emblem of Mughal wealth and artistry at its zenith.",
+    source:"Koch, 'The Complete Taj Mahal' (2006)."
+  },
+  "mexico-1521-fall-of-tenochtitlan":{
+    detail:"Cortés's small Spanish force prevailed only through alliances with peoples resentful of Aztec dominance and through the ravages of smallpox, which devastated the defenders. The siege reduced one of the world's largest cities to ruins, and Spanish Mexico City rose on top of it.",
+    why:"It ended the Aztec Empire and began three centuries of Spanish rule in Mesoamerica.",
+    source:"Restall, 'When Montezuma Met Cortés' (2018)."
+  },
+  "peru-1533-spanish-conquest-of-the-inca":{
+    detail:"Pizarro exploited a war of succession within the Inca Empire, ambushed and ransomed the emperor Atahualpa, then executed him. European disease and Indigenous allies again proved decisive against a far larger population.",
+    why:"It toppled the largest empire in the Americas and opened the Andes to Spanish silver extraction.",
+    source:"Hemming, 'The Conquest of the Incas' (1970)."
+  },
+  "southafrica-1994-end-of-apartheid":{
+    detail:"After decades of resistance, international sanctions, and negotiations led by F.W. de Klerk and the released Nelson Mandela, South Africa held its first fully democratic election in April 1994. Mandela became the country's first Black president.",
+    why:"It ended a system of legalized racial oppression and became a symbol of peaceful transition worldwide.",
+    source:"Mandela, 'Long Walk to Freedom' (1994); Sparks, 'Tomorrow Is Another Country' (1995)."
+  },
+  "greece-1453-fall-of-constantinople":{
+    detail:"Mehmed II's Ottoman army breached the ancient triple walls with massive cannon after a seven-week siege. The last Byzantine emperor died in the fighting, and the city became the Ottoman capital, Istanbul.",
+    why:"It ended the thousand-year Eastern Roman Empire and reshaped trade and power between Europe and Asia.",
+    source:"Crowley, '1453: The Holy War for Constantinople' (2005)."
+  },
+  "ethiopia-1896-battle-of-adwa":{
+    detail:"Emperor Menelik II's forces decisively defeated an invading Italian army at Adwa, inflicting one of the heaviest defeats a European power suffered in Africa. Ethiopia secured recognition of its independence.",
+    why:"It made Ethiopia a lasting symbol of African sovereignty and anti-colonial resistance.",
+    images:[img("Adwa.jpg","A depiction of the Battle of Adwa, 1896 (Wikimedia Commons)")],
+    source:"Jonas, 'The Battle of Adwa: African Victory in the Age of Empire' (2011)."
+  },
+  "mali-1591-fall-of-songhai":{
+    detail:"A Moroccan expedition armed with gunpowder weapons crossed the Sahara and shattered the far larger Songhai army at Tondibi in 1591. The empire fragmented, and the great trans-Saharan trading cities declined.",
+    why:"It ended the last of the great medieval West African empires.",
+    source:"Hunwick, 'Timbuktu and the Songhay Empire' (1999)."
+  },
+  "lakota-1876-battle-of-the-little-bighorn":{
+    detail:"Led by figures including Sitting Bull and Crazy Horse, a large alliance of Lakota, Cheyenne, and Arapaho overwhelmed Custer's Seventh Cavalry in Montana Territory. The victory was total but short-lived, as the US poured in troops in response.",
+    why:"It was the Plains nations' most famous victory — and it hardened the campaign that ended their independence.",
+    source:"Philbrick, 'The Last Stand' (2010)."
+  },
+  "us-1941-pearl-harbor":{
+    detail:"Japanese carrier aircraft struck the US Pacific Fleet at anchor on the morning of December 7, 1941, killing over 2,400 people and crippling eight battleships. The American aircraft carriers were at sea and survived, a fact that shaped the naval war that followed.",
+    why:"It ended American neutrality overnight and turned a European war into a global one.",
+    source:"Prange, 'At Dawn We Slept: The Untold Story of Pearl Harbor' (1981)."
+  },
+  "us-1954-brown-v-board-of-education":{
+    detail:"A unanimous Supreme Court held that separate educational facilities are inherently unequal, overturning the doctrine set out in Plessy v. Ferguson in 1896. Implementation was slow and fiercely resisted across the South for years afterward.",
+    why:"It gave the civil rights movement its central legal victory and the constitutional ground to build on.",
+    source:"Kluger, 'Simple Justice' (1975)."
+  },
+  "uk-1859-on-the-origin-of-species":{
+    detail:"Darwin had sat on his theory for two decades before Alfred Russel Wallace independently arrived at natural selection, prompting him to publish. The first print run sold out immediately, and the argument reached far beyond biology into theology and politics.",
+    why:"It supplied a mechanism for the diversity of life and reshaped how humans understand their own origins.",
+    source:"Browne, 'Charles Darwin: The Power of Place' (2002)."
+  },
+  "uk-1953-structure-of-dna":{
+    detail:"Watson and Crick's double-helix model rested substantially on Rosalind Franklin's X-ray diffraction images, obtained at King's College London and shown to them without her knowledge. Franklin died in 1958 and was not eligible for the Nobel awarded in 1962.",
+    why:"It revealed how heredity is physically encoded and opened the whole field of molecular biology.",
+    source:"Maddox, 'Rosalind Franklin: The Dark Lady of DNA' (2002)."
+  },
+  "russia-1957-sputnik-launched":{
+    detail:"A polished metal sphere the size of a beach ball, Sputnik 1 broadcast a simple radio pulse that amateur operators worldwide could hear. Its launch stunned an American public that had assumed technological superiority.",
+    why:"It opened the space age and triggered the Space Race, along with a wave of Western investment in science education.",
+    source:"Brzezinski, 'Red Moon Rising' (2007)."
+  },
+  "poland-1939-invaded-from-both-sides":{
+    detail:"Germany invaded on September 1, 1939 and the Soviet Union followed on September 17 under the secret protocol of the Molotov-Ribbentrop Pact. Poland was partitioned between them within weeks, and its citizens suffered proportionally greater losses than any other country in the war.",
+    why:"It began the Second World War in Europe and erased the Polish state for the second time in 150 years.",
+    source:"Davies, 'God's Playground: A History of Poland' (rev. ed., 2005)."
+  },
+  "china-1966-cultural-revolution":{
+    detail:"Mao mobilized student Red Guards against teachers, officials, and anyone labelled bourgeois, closing universities and destroying vast quantities of cultural heritage. The chaos lasted roughly a decade and cost an estimated one to two million lives.",
+    why:"It shattered a generation's education and institutions, and shaped the pragmatism of the reforms that followed Mao's death.",
+    source:"Dikotter, 'The Cultural Revolution: A People's History, 1962-1976' (2016)."
+  },
+  "india-1919-amritsar-massacre":{
+    detail:"Troops under General Dyer fired without warning on a peaceful gathering penned inside the walled Jallianwala Bagh, killing several hundred and wounding over a thousand. Dyer was relieved of command but celebrated by many in Britain.",
+    why:"It destroyed moderate faith in British reform and pushed Gandhi toward mass non-cooperation.",
+    source:"Wagner, 'Amritsar 1919: An Empire of Fear and the Making of a Massacre' (2019)."
+  },
+  "southafrica-1990-mandela-released":{
+    detail:"F.W. de Klerk unbanned the ANC and other organizations in February 1990, and Mandela walked out of Victor Verster Prison days later after 27 years. Four years of tense negotiation and considerable violence followed before the 1994 election.",
+    why:"It began the negotiated end of apartheid rather than the racial civil war many had expected.",
+    source:"Sparks, 'Tomorrow Is Another Country' (1995)."
+  },
+  "egypt-1956-suez-crisis":{
+    detail:"After Nasser nationalized the Suez Canal Company, Britain, France, and Israel launched a coordinated military operation. American and Soviet pressure forced a humiliating withdrawal within weeks.",
+    why:"It exposed the end of Britain and France as independent great powers and made Nasser a hero across the Arab world.",
+    source:"Kyle, 'Suez: Britain's End of Empire in the Middle East' (1991)."
+  },
+  "australia-1915-gallipoli":{
+    detail:"Australian and New Zealand troops landed on the Gallipoli peninsula in April 1915 as part of a failed Allied attempt to knock the Ottomans out of the war. The eight-month campaign ended in evacuation, with more than 8,000 Australians dead.",
+    why:"A military failure that became the founding story of Australian and New Zealand national identity, marked each year on Anzac Day.",
+    source:"Broadbent, 'Gallipoli: The Fatal Shore' (2005)."
+  },
+};
+
+// Merge deep-dive content onto the base events by id.
+EVENTS.forEach(e=>{
+  const x=ENRICH[e.id]; if(!x) return;
+  if(x.detail) e.detail=x.detail;
+  if(x.why) e.why=x.why;
+  if(x.source) e.source=x.source;
+  if(x.images && x.images.length) e.images=[...(e.images||[]), ...x.images];
+});
+
+const ERAS_ANCIENT = [
+  era("greece","Archaic Greece",-800,-480,"City-states, colonies, and the first Olympic games took shape."),
+  era("greece","Classical Greece",-480,-323,"Athens and Sparta, drama, philosophy, and the Persian wars."),
+  era("greece","Hellenistic world",-323,-146,"Alexander's successors spread Greek culture from Egypt to India."),
+  era("greece","Roman and Byzantine Greece",-146,1453,"Greece lay within Rome and then the Eastern Empire for centuries."),
+  era("italy","Roman Republic",-509,-27,"An expanding republic of consuls, legions, and civil strife."),
+  era("italy","Roman Empire",-27,476,"Imperial Rome ruled the Mediterranean world for five centuries."),
+  era("italy","Early medieval Italy",476,1000,"Fragmented rule by Goths, Byzantines, Lombards, and Franks."),
+  era("italy","Communes and city-states",1000,1400,"Trading cities grew rich and independent across the peninsula."),
+  era("iraq","Assyrian and Babylonian empires",-800,-539,"Mesopotamian empires dominated the ancient Near East."),
+  era("iraq","Persian and Hellenistic rule",-539,637,"Mesopotamia lay under Persian, Greek, and then Sasanian control."),
+  era("iraq","The Abbasid Caliphate",750,1258,"Baghdad was the intellectual and commercial centre of the Islamic world."),
+  era("iran","The Achaemenid Empire",-550,-330,"The first Persian empire stretched from the Aegean to the Indus."),
+  era("iran","Parthian and Sasanian Persia",-247,651,"Persian dynasties rivalled Rome for control of the Near East."),
+  era("iran","Islamic Persia",651,1501,"Persian culture flourished under caliphates, Turks, and Mongols."),
+  era("egypt","Late and Ptolemaic Egypt",-800,-30,"Foreign dynasties and then Alexander's successors ruled the Nile."),
+  era("egypt","Roman and Byzantine Egypt",-30,641,"Egypt was Rome's granary and an early centre of Christianity."),
+  era("egypt","Islamic Egypt",641,1517,"Caliphates, Fatimids, and Mamluks ruled from Cairo."),
+  era("turkey","Byzantine Anatolia",330,1071,"The Eastern Roman Empire governed from Constantinople."),
+  era("turkey","Turkish Anatolia",1071,1299,"Seljuk and beylik rule followed the Byzantine retreat."),
+  era("china","Warring States and Qin",-800,-206,"Rival states competed until Qin imposed unity."),
+  era("china","Han China",-206,220,"A classical imperial order took shape alongside the Silk Road."),
+  era("china","Division and reunification",220,618,"Centuries of fragmentation ended with Sui and Tang."),
+  era("china","Tang and Song",618,1279,"Cosmopolitan trade, printing, gunpowder, and a commercial revolution."),
+  era("china","The Yuan dynasty",1279,1368,"Mongol rule linked China to a vast Eurasian empire."),
+  era("india","Vedic and Mauryan India",-800,-185,"Early kingdoms gave way to the subcontinent's first great empire."),
+  era("india","Classical India",320,650,"The Gupta age advanced mathematics, astronomy, and Sanskrit letters."),
+  era("india","Medieval India",650,1526,"Regional kingdoms and then the Delhi Sultanate contested the north."),
+  era("japan","Ancient Japan",538,794,"Buddhism, Chinese models of the state, and the first capitals."),
+  era("japan","The Heian period",794,1185,"An aristocratic court culture produced Japan's classical literature."),
+  era("japan","Shogunate Japan",1185,1467,"Warrior government ruled in the emperor's name."),
+  era("korea","Silla and Goryeo",668,1392,"A unified peninsula developed Buddhist art and movable type."),
+  era("mongolia","The Mongol Empire",1206,1368,"The largest contiguous land empire in history spanned Eurasia."),
+  era("uk","Roman Britain",43,410,"Britain was a northern province of the Roman Empire."),
+  era("uk","Anglo-Saxon and Viking Britain",410,1066,"Germanic kingdoms and Norse raiders contested the island."),
+  era("uk","Norman and Plantagenet England",1066,1485,"Conquest, common law, plague, and long wars with France."),
+  era("france","The Frankish kingdoms",481,987,"Merovingians and Carolingians built a Christian realm in Gaul."),
+  era("france","Capetian and Valois France",987,1589,"Royal power slowly consolidated through crusade, plague, and war."),
+  era("germany","The Holy Roman Empire",962,1806,"A loose confederation of German states under an elected emperor."),
+  era("spain","Al-Andalus",711,1492,"Muslim Iberia was a centre of learning as Christian kingdoms advanced."),
+  era("russia","Kievan Rus",862,1240,"A Norse-founded, Byzantine-influenced realm centred on Kyiv."),
+  era("russia","Mongol suzerainty",1240,1480,"The Rus principalities paid tribute to the Golden Horde."),
+  era("ethiopia","The Aksumite kingdom",-100,940,"A trading power on the Red Sea and an early Christian state."),
+  era("ethiopia","Zagwe and Solomonic Ethiopia",1137,1974,"Rock-hewn churches and a dynasty claiming Solomonic descent."),
+  era("mali","The Mali Empire",1235,1464,"Gold, salt, and scholarship made Mali a Saharan superpower."),
+  era("nigeria","Ife and Benin",1000,1897,"Forest kingdoms produced remarkable bronze and brass sculpture."),
+  era("maya","The Classic Maya",250,900,"City-states across the lowlands mastered writing and astronomy."),
+  era("maya","The Postclassic Maya",900,1524,"Power shifted north to Chichen Itza and Mayapan."),
+  era("mexico","Teotihuacan",100,750,"A vast planned city dominated central Mexico."),
+  era("mexico","Toltec and post-Toltec",900,1428,"Militarized states preceded the rise of the Aztecs."),
+  era("peru","Wari and Tiwanaku",600,1000,"Andean states built roads, terraces, and highland cities."),
+  era("vietnam","Chinese rule and independence",-111,1428,"A millennium under Chinese administration ended in independence."),
+  era("indonesia","Srivijaya and Majapahit",700,1527,"Maritime empires controlled the straits and archipelago trade."),
+];
+ERAS.push(...ERAS_ANCIENT);
+
+const MIN_YEAR=-800, MAX_YEAR=2025;
+
+/* Year display. Negative years are BCE; there is no year zero. */
+function fmtYear(y){ return y<0 ? `${Math.abs(y)} BCE` : `${y}`; }
+function fmtRange(a,b){ return `${fmtYear(a)}\u2013${fmtYear(b)}`; }
+
+/* The further back you go, the thinner the record — so the "what else was
+   happening" window widens to keep the globe meaningfully populated. */
+function windowFor(y){
+  if(y < 1) return 120;
+  if(y < 500) return 90;
+  if(y < 1000) return 70;
+  if(y < 1500) return 40;
+  if(y < 1800) return 20;
+  return 10;
+}
+const DENSE_YEARS=(()=>{const pool=[];for(let y=MIN_YEAR;y<=MAX_YEAR;y++){const w=windowFor(y);const hit=new Set(EVENTS.filter(e=>Math.abs(e.year-y)<=w).map(e=>e.region));if(hit.size>=3)pool.push(y);}return pool;})();
+
+let year=1865, selected=null, highlightId=null;
+const activeRegions={};
+
+/* Tag filtering. Empty set = show everything. */
+const ALL_TAGS=["war","politics","revolution","leader","religion","culture","science","economy","expansion","society","infrastructure","disaster","sport"];
+const TAG_LABEL={war:"war",politics:"politics",revolution:"revolutions",leader:"leaders & power",religion:"religion",culture:"culture",science:"science",economy:"economy",expansion:"expansion",society:"society",infrastructure:"building",disaster:"disasters",sport:"sport"};
+let tagFilter=new Set();
+function tagVisible(e){ return tagFilter.size===0 || e.tags.some(t=>tagFilter.has(t)); }
+const eventsNear=(rk)=>EVENTS.filter(e=>e.region===rk && Math.abs(e.year-year)<=windowFor(year) && tagVisible(e)).sort((a,b)=>a.year-b.year);
+const erasFor=(rk)=>ERAS.filter(e=>e.region===rk && year>=e.start && year<e.end);
+function recomputeActive(){ Object.keys(REGIONS).forEach(rk=>{ activeRegions[rk]=eventsNear(rk).length>0; }); }
+
+const $input=document.getElementById("year-input"), $slider=document.getElementById("slider"),
+      $current=document.getElementById("current-year"), $windowNote=document.getElementById("window-note"),
+      $dense=document.getElementById("dense"), $detail=document.getElementById("detail"),
+      $search=document.getElementById("search"), $results=document.getElementById("results"), $stat=document.getElementById("stat");
+
+$stat.textContent = `${Object.keys(REGIONS).length} regions · ${EVENTS.length} events · ${ERAS.length} eras · 800 BCE–2025`;
+
+/* ---- Tag filter bar ---- */
+const $tagbar=document.getElementById("tagbar");
+function renderTagbar(){
+  const counts={}; EVENTS.forEach(e=>e.tags.forEach(t=>counts[t]=(counts[t]||0)+1));
+  $tagbar.innerHTML = `<span class="tb-label">filter</span>` +
+    ALL_TAGS.filter(t=>counts[t]).map(t=>
+      `<button class="tchip${tagFilter.has(t)?" on":""}" data-tag="${t}" style="color:var(--tag-${t});" aria-pressed="${tagFilter.has(t)}">${esc(TAG_LABEL[t]||t)} ${counts[t]}</button>`
+    ).join("") +
+    (tagFilter.size?`<button class="tclear" id="tclear">clear ${tagFilter.size}</button>`:"");
+  $tagbar.querySelectorAll(".tchip").forEach(b=>b.addEventListener("click",()=>{
+    const t=b.dataset.tag;
+    if(tagFilter.has(t)) tagFilter.delete(t); else tagFilter.add(t);
+    renderTagbar(); recomputeActive(); renderDetail();
+  }));
+  const clr=document.getElementById("tclear");
+  if(clr) clr.addEventListener("click",()=>{ tagFilter.clear(); renderTagbar(); recomputeActive(); renderDetail(); });
+}
+
+function updateWindowNote(){ const w=windowFor(year); $windowNote.textContent=`events within \u00b1${w} years (${fmtRange(year-w,year+w)})`; }
+function applyYear(y,keepSel){ y=Math.round(y); if(isNaN(y)) y=MIN_YEAR; year=Math.max(MIN_YEAR,Math.min(MAX_YEAR,y)); if(!keepSel){ selected=null; highlightId=null; } $input.value=fmtYear(year); $slider.value=year; $current.textContent=fmtYear(year); updateWindowNote(); recomputeActive(); renderDetail(); }
+function randomize(){ if($dense.checked && DENSE_YEARS.length) applyYear(DENSE_YEARS[Math.floor(Math.random()*DENSE_YEARS.length)]); else applyYear(MIN_YEAR+Math.floor(Math.random()*(MAX_YEAR-MIN_YEAR+1))); }
+function selectRegion(rk){ if(!activeRegions[rk]) return; selected=(selected===rk)?null:rk; if(selected){ focusRegion(rk); lockSpin(true); } else { lockSpin(false); } renderDetail(); }
+
+/* Accepts "1865", "-480", "480 BC", "480 BCE", "44 bce". */
+function parseYear(str){
+  str=(str||"").trim().toLowerCase();
+  const bce=/\b(bce?|b\.c\.?)\b/.test(str);
+  const n=parseInt(str.replace(/[^0-9-]/g,""),10);
+  if(isNaN(n)) return NaN;
+  return bce ? -Math.abs(n) : n;
+}
+
+document.getElementById("go").onclick=()=>applyYear(parseYear($input.value));
+$input.addEventListener("keydown",e=>{ if(e.key==="Enter") applyYear(parseYear($input.value)); });
+document.getElementById("random").onclick=randomize;
+$slider.addEventListener("input",()=>applyYear(parseInt($slider.value,10)));
+
+const INDEX = [
+  ...EVENTS.map(e=>({type:"event", id:e.id, region:e.region, year:e.year, label:e.title, region_name:REGIONS[e.region].name})),
+  ...ERAS.map(e=>({type:"era", id:e.id, region:e.region, year:Math.round((+e.start + +e.end)/2), start:e.start, end:e.end, label:e.name, region_name:REGIONS[e.region].name})),
+];
+let searchSel=-1, currentResults=[];
+function runSearch(q){
+  q=q.trim().toLowerCase();
+  if(!q){ $results.classList.remove("on"); currentResults=[]; return; }
+  currentResults = INDEX.filter(x=> x.label.toLowerCase().includes(q) || x.region_name.toLowerCase().includes(q))
+    .sort((a,b)=> a.label.toLowerCase().indexOf(q) - b.label.toLowerCase().indexOf(q)).slice(0,10);
+  searchSel=-1;
+  if(!currentResults.length){ $results.innerHTML=`<div class="no-result">No match. Try \u201cBolsheviks\u201d, \u201cByzantine\u201d, \u201cSafavid\u201d, \u201cInca\u201d\u2026</div>`; $results.classList.add("on"); return; }
+  $results.innerHTML=currentResults.map((x,i)=>`
+    <div class="result" data-i="${i}">
+      <div class="r-title"><span class="r-type">${x.type}</span>${esc(x.label)}</div>
+      <div class="r-meta">${esc(x.region_name)} \u00b7 ${x.type==="era"?fmtRange(x.start,x.end):fmtYear(x.year)}</div>
+    </div>`).join("");
+  $results.classList.add("on");
+  $results.querySelectorAll(".result").forEach(el=>el.onclick=()=>pickResult(+el.dataset.i));
+}
+function pickResult(i){
+  const x=currentResults[i]; if(!x) return;
+  $search.value=x.label; $results.classList.remove("on");
+  applyYear(x.year, true);
+  selected=x.region; focusRegion(x.region); lockSpin(true);
+  highlightId = x.type==="event" ? x.id : null;
+  renderDetail();
+}
+$search.addEventListener("input",()=>runSearch($search.value));
+$search.addEventListener("keydown",e=>{
+  if(!$results.classList.contains("on")) return;
+  const items=$results.querySelectorAll(".result");
+  if(e.key==="ArrowDown"){ e.preventDefault(); searchSel=Math.min(items.length-1,searchSel+1); }
+  else if(e.key==="ArrowUp"){ e.preventDefault(); searchSel=Math.max(0,searchSel-1); }
+  else if(e.key==="Enter"){ e.preventDefault(); pickResult(searchSel<0?0:searchSel); return; }
+  else if(e.key==="Escape"){ $results.classList.remove("on"); return; }
+  items.forEach((el,i)=>el.classList.toggle("sel",i===searchSel));
+});
+document.addEventListener("click",e=>{ if(!e.target.closest(".searchbar")) $results.classList.remove("on"); });
+
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function stripPeriod(t){ return t.replace(/\.$/,""); }
+function lowerFirst(t){ return t.charAt(0).toLowerCase()+t.slice(1); }
+
+function buildNarrative(rk){
+  const evs=eventsNear(rk); let s="";
+  const before=evs.filter(e=>e.year<year).sort((a,b)=>b.year-a.year);
+  const on=evs.filter(e=>e.year===year);
+  const after=evs.filter(e=>e.year>year).sort((a,b)=>a.year-b.year);
+  if(on.length) s+=`In ${year}, ${esc(lowerFirst(on[0].title))} \u2014 ${esc(stripPeriod(on[0].blurb))}. `;
+  if(before.length){ const b=before[0]; s+=`${on.length?"Just ":`By ${year}, `}${year-b.year} year${year-b.year===1?"":"s"} earlier ${esc(lowerFirst(b.title))} had reshaped the moment. `; }
+  if(after.length){ const a=after[0]; s+=`Within ${a.year-year} year${a.year-year===1?"":"s"}, ${esc(lowerFirst(a.title))} would follow. `; }
+  if(!evs.length) s+=`The sample holds no events this close to ${year} \u2014 try widening the year.`;
+  return s.trim();
+}
+function buildMeanwhile(rk){
+  const others=Object.keys(REGIONS).filter(k=>k!==rk && activeRegions[k]);
+  if(!others.length) return "";
+  const bits=others.slice(0,6).map(k=>{ const era=erasFor(k)[0]; return `${esc(REGIONS[k].name)}${era?` was in the ${esc(era.name)}`:` had events unfolding`}`; });
+  return `<div class="meanwhile"><b>Meanwhile, around ${year}</b>${bits.join("; ")}.</div>`;
+}
+
+function renderDetail(){
+  if(!selected){
+    const any=Object.values(activeRegions).some(Boolean);
+    $detail.innerHTML=`<div class="placeholder">${any?"Click a glowing place on the globe \u2014 or search a period above \u2014 to read its story here.":"Nothing notable in the sample this year. Try another year, search a period, or hit Random."}</div>`;
+    return;
+  }
+  const r=REGIONS[selected], eras=erasFor(selected), evs=eventsNear(selected);
+  const eraHTML=eras.map(e=>`<div class="era-head"><div class="era-kicker">Era \u00b7 ${fmtRange(e.start,e.end)}</div><h3>${esc(e.name)}</h3><div class="era-desc">${esc(e.long||"")}</div></div>`).join("");
+  const evHTML=evs.map(e=>{
+    const imgs=(e.images||[]);
+    const figHTML=imgs.length?`<div class="event-figs${imgs.length>1?' multi':''}">${imgs.map(im=>
+      `<figure class="event-fig"><img class="event-img" src="${esc(im.src)}" alt="${esc(e.title)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.event-fig').style.display='none'">${im.cap?`<figcaption class="event-img-cap">${esc(im.cap)}</figcaption>`:""}</figure>`).join("")}</div>`:"";
+    const hasDeep = !!(e.detail || e.why || imgs.length>1);
+    const open = e.id===highlightId; // auto-open the searched-to event
+    // Collapsed cards show blurb only; the deep-dive holds detail, extra images, significance.
+    const deepHTML = hasDeep ? `<div class="deep" ${open?'':'hidden'}>
+        ${e.detail?`<p class="deep-detail">${esc(e.detail)}</p>`:""}
+        ${imgs.length>1?figHTML:""}
+        ${e.why?`<div class="why"><span class="why-label">Why it mattered</span>${esc(e.why)}</div>`:""}
+      </div>` : "";
+    // A single image sits in the collapsed card; multiples move into the deep-dive.
+    const collapsedFig = imgs.length===1 ? figHTML : "";
+    return `<article class="event ${open?'hl':''}" data-id="${esc(e.id)}"><div class="event-year">${fmtYear(e.year)}</div><div>
+      <h3>${esc(e.title)}</h3>
+      ${collapsedFig}
+      <p>${esc(e.blurb)}</p>
+      ${deepHTML}
+      <div class="tags">${e.tags.map(t=>`<span class="tag" style="color:var(--tag-${t});border-color:var(--tag-${t});background:color-mix(in srgb, var(--tag-${t}) 13%, transparent);">${esc(t)}</span>`).join("")}</div>
+      ${hasDeep?`<button class="expand" data-id="${esc(e.id)}" aria-expanded="${open}">${open?"Show less":"Read more"}</button>`:""}
+      <div class="event-src">source: ${esc(e.source)}</div>
+    </div></article>`;
+  }).join("");
+  const sensitive=r.sensitive?`<div class="sensitive">This is a prototype scaffold drawn from general history, not community-reviewed or authoritative. A real product should center Indigenous sources and authorship.</div>`:"";
+  $detail.innerHTML=`<section class="panel">
+    <div class="panel-head"><h2>${esc(r.name)} \u00b7 around ${year}</h2><button class="close" id="close-btn">Close \u2715</button></div>
+    ${sensitive}${eraHTML}
+    <div class="narrative">${buildNarrative(selected)}${buildMeanwhile(selected)}</div>
+    <div class="events"><h4>Events in view</h4>${evHTML||'<p style="opacity:.6;font-size:14px;padding:8px 0;">No events within \u00b1'+windowFor(year)+' years \u2014 but the era above sets the scene.</p>'}</div>
+    <div class="sources"><h4>Sources & further research</h4>
+      <p>Each entry carries a <em>source</em> field (placeholder text in this prototype). A production build would cite each to a specific work or record.</p>
+      <p>Research gateways: the <a href="https://library.si.edu/research/databases-history-culture-research" target="_blank" rel="noopener">Smithsonian Libraries databases</a> and <a href="https://www.britannica.com/" target="_blank" rel="noopener">Encyclop\u00e6dia Britannica</a>. Images link to Wikimedia Commons.</p>
+    </div>
+  </section>`;
+  document.getElementById("close-btn").onclick=()=>{ selected=null; highlightId=null; lockSpin(false); renderDetail(); };
+  $detail.querySelectorAll(".expand").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const card=btn.closest(".event"), deep=card.querySelector(".deep");
+      if(!deep) return;
+      const nowOpen=deep.hasAttribute("hidden");
+      if(nowOpen){ deep.removeAttribute("hidden"); btn.textContent="Show less"; btn.setAttribute("aria-expanded","true"); }
+      else { deep.setAttribute("hidden",""); btn.textContent="Read more"; btn.setAttribute("aria-expanded","false"); }
+    });
+  });
+  if(highlightId){ const h=$detail.querySelector(".event.hl"); if(h) h.scrollIntoView({behavior:"smooth",block:"center"}); }
+}
+
+let focusRegion=()=>{}, lockSpin=()=>{};
+(function initGlobe(){
+  const el=document.getElementById("globe"), status=document.getElementById("globe-status"), badge=document.getElementById("paused-badge");
+  const W=el.clientWidth, H=el.clientWidth*0.92;
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(45, W/H, 0.1, 100);
+  let camDist=3.0; camera.position.z=camDist;
+  const renderer=new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setSize(W,H); renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  el.appendChild(renderer.domElement);
+  const world=new THREE.Group(); scene.add(world);
+  world.add(new THREE.Mesh(new THREE.SphereGeometry(1,64,64), new THREE.MeshPhongMaterial({color:0x24414b, emissive:0x0c1a1f, shininess:10})));
+  world.add(new THREE.Mesh(new THREE.SphereGeometry(1.001,36,24), new THREE.MeshBasicMaterial({color:0x557079, wireframe:true, transparent:true, opacity:0.10})));
+  scene.add(new THREE.AmbientLight(0xffffff,0.7));
+  const dir=new THREE.DirectionalLight(0xffe9c8,0.85); dir.position.set(3,2,4); scene.add(dir);
+  const RADIUS=1.004;
+  function toVec3(lat,lon,r){ const phi=(90-lat)*Math.PI/180, theta=(lon+180)*Math.PI/180;
+    return new THREE.Vector3(-r*Math.sin(phi)*Math.cos(theta), r*Math.cos(phi), r*Math.sin(phi)*Math.sin(theta)); }
+  const markers={};
+  Object.entries(REGIONS).forEach(([rk,r])=>{
+    const g=new THREE.Group();
+    const geo=r.sensitive?new THREE.OctahedronGeometry(0.03):new THREE.SphereGeometry(0.022,16,16);
+    const pin=new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color:0xb9b0a0}));
+    const halo=new THREE.Mesh(new THREE.SphereGeometry(0.044,16,16), new THREE.MeshBasicMaterial({color:0xd98f3a, transparent:true, opacity:0}));
+    g.add(halo); g.add(pin);
+    g.position.copy(toVec3(r.lat,r.lon,1.03));
+    g.userData={rk,pin,halo,sensitive:!!r.sensitive}; world.add(g); markers[rk]=g;
+  });
+  const isoToRegion={}; Object.entries(REGIONS).forEach(([rk,r])=>{ if(r.iso) isoToRegion[r.iso]=rk; });
+  function addOutlines(geo){
+    const hi=new THREE.LineBasicMaterial({color:0xd98f3a, transparent:true, opacity:0.9});
+    const base=new THREE.LineBasicMaterial({color:0x8fa9b0, transparent:true, opacity:0.4});
+    geo.features.forEach(f=>{
+      const iso=+f.id, feat=!!isoToRegion[iso], gm=f.geometry; if(!gm) return;
+      const polys= gm.type==="Polygon"?[gm.coordinates]: gm.type==="MultiPolygon"?gm.coordinates:[];
+      polys.forEach(poly=>poly.forEach(ring=>{ const pts=ring.map(([lon,lat])=>toVec3(lat,lon,RADIUS)); world.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), feat?hi:base)); }));
+    });
+  }
+  fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+    .then(r=>{ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(topo=>{ addOutlines(topojson.feature(topo, topo.objects.countries)); status.style.display="none"; })
+    .catch(err=>{ status.textContent="Map outlines unavailable offline \u2014 markers still work."; setTimeout(()=>status.style.display="none",3500); console.warn(err); });
+  const targetRot={x:0.2,y:0};
+  let autoRot=true, locked=false, dragging=false, px=0, py=0, moved=0;
+  const ray=new THREE.Raycaster();
+  const prefersReduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  focusRegion=(rk)=>{ const r=REGIONS[rk];
+    let ty=-((r.lon+180)*Math.PI/180)-Math.PI/2;
+    // Snap the target to the rotation nearest the globe's current angle, so it
+    // rotates the short way to the country instead of unwinding a full spin.
+    const cur=world.rotation.y, TAU=Math.PI*2;
+    ty += Math.round((cur-ty)/TAU)*TAU;
+    targetRot.y=ty;
+    targetRot.x=Math.max(-1.0,Math.min(1.0,(r.lat*Math.PI/180)*0.85)); };
+  lockSpin=(on)=>{ locked=on; autoRot=!on; badge.classList.toggle("on", on); document.getElementById("spin-toggle").textContent = on?"\u25b6 release":"\u275a\u275a spin"; };
+  function zoom(f){ camDist=Math.max(1.5,Math.min(5,camDist*f)); }
+  document.getElementById("zoom-in").onclick=()=>zoom(0.82);
+  document.getElementById("zoom-out").onclick=()=>zoom(1.22);
+  document.getElementById("spin-toggle").onclick=()=>{ if(locked){ selected=null; highlightId=null; renderDetail(); lockSpin(false); autoRot=true; } else { autoRot=!autoRot; document.getElementById("spin-toggle").textContent=autoRot?"\u275a\u275a spin":"\u25b6 spin"; badge.classList.toggle("on",!autoRot);} };
+  const dom=renderer.domElement;
+  dom.addEventListener("wheel",e=>{ e.preventDefault(); zoom(e.deltaY>0?1.08:0.92); }, {passive:false});
+  const down=e=>{ dragging=true; if(!locked) autoRot=false; moved=0; const p=e.touches?e.touches[0]:e; px=p.clientX; py=p.clientY; };
+  const move=e=>{ if(!dragging) return; const p=e.touches?e.touches[0]:e; const dx=p.clientX-px, dy=p.clientY-py; moved+=Math.abs(dx)+Math.abs(dy); targetRot.y+=dx*0.005; targetRot.x=Math.max(-1.2,Math.min(1.2,targetRot.x+dy*0.005)); px=p.clientX; py=p.clientY; };
+  const up=e=>{ dragging=false;
+    if(moved<6){ const rect=dom.getBoundingClientRect(); const p=e.changedTouches?e.changedTouches[0]:e;
+      const mouse=new THREE.Vector2(((p.clientX-rect.left)/rect.width)*2-1, -((p.clientY-rect.top)/rect.height)*2+1);
+      ray.setFromCamera(mouse,camera); ray.params.Points={threshold:0.05};
+      const hits=ray.intersectObjects(Object.values(markers).map(m=>m.userData.pin),false);
+      if(hits.length){ selectRegion(hits[0].object.parent.userData.rk); return; }
+    }
+    if(!locked) setTimeout(()=>{ if(!dragging && !locked) autoRot=true; },3500);
+  };
+  dom.addEventListener("mousedown",down); window.addEventListener("mousemove",move); window.addEventListener("mouseup",up);
+  dom.addEventListener("touchstart",down,{passive:true}); dom.addEventListener("touchmove",move,{passive:true}); dom.addEventListener("touchend",up);
+  (function loop(){
+    requestAnimationFrame(loop);
+    if(autoRot && !locked && !prefersReduced) targetRot.y+=0.0022;
+    if(locked){
+      // Locked onto a region: snap in quickly, then stop dead. Once the
+      // remaining delta is imperceptible we assign the target exactly, so
+      // there is no asymptotic creep left to read as "still spinning".
+      const dy=targetRot.y-world.rotation.y, dx=targetRot.x-world.rotation.x;
+      if(Math.abs(dy)<0.0015 && Math.abs(dx)<0.0015){
+        world.rotation.y=targetRot.y; world.rotation.x=targetRot.x;
+      } else {
+        world.rotation.y+=dy*0.16; world.rotation.x+=dx*0.16;
+      }
+    } else {
+      world.rotation.y+=(targetRot.y-world.rotation.y)*0.08;
+      world.rotation.x+=(targetRot.x-world.rotation.x)*0.08;
+    }
+    camera.position.z+=(camDist-camera.position.z)*0.1;
+    const t=performance.now()*0.003;
+    Object.values(markers).forEach(m=>{
+      const on=activeRegions[m.userData.rk], sel=selected===m.userData.rk;
+      m.userData.pin.material.color.set(sel?0xffffff:on?0xd98f3a:0xb9b0a0);
+      const th=on?(0.35+Math.sin(t)*0.18):0;
+      m.userData.halo.material.opacity+=(th-m.userData.halo.material.opacity)*0.1;
+      m.userData.pin.scale.setScalar(sel?1.7:1);
+      if(m.userData.sensitive && !locked) m.userData.pin.rotation.y+=0.01;
+    });
+    renderer.render(scene,camera);
+  })();
+  window.addEventListener("resize",()=>{ const w=el.clientWidth,h=el.clientWidth*0.92; camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h); });
+})();
+
+renderTagbar(); updateWindowNote(); recomputeActive(); renderDetail();
+</script>
+</body>
+</html>
